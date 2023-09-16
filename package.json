@@ -9,12 +9,13 @@
     "web": "expo start --web"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^1.19.3",
+    "@react-native-async-storage/async-storage": "^1.18.2",
     "@react-navigation/native": "^6.1.7",
     "@react-navigation/native-stack": "^6.9.13",
     "@supabase/supabase-js": "^2.33.2",
     "axios": "^1.5.0",
     "expo": "~49.0.10",
+    "expo-app-loading": "^2.1.1",
     "expo-secure-store": "~12.3.1",
     "expo-status-bar": "~1.6.0",
     "react": "18.2.0",

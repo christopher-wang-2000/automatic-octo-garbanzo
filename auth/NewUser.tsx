@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { Alert, StyleSheet, Text, View, TextInput, Button as TextButton } from 'react-native';
 import { Button, Input } from 'react-native-elements'
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
@@ -7,6 +7,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { register } from './Auth';
 import LoadingOverlay from './LoadingOverlay';
+import { AuthContext } from '../store/auth-context';
 
 export default function Register({ navigation }) {
   const [enteredEmail, setEnteredEmail] = useState('');
@@ -15,6 +16,7 @@ export default function Register({ navigation }) {
   const [enteredConfirmPassword, setEnteredConfirmPassword] = useState('');
 
   const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const authCtx = useContext(AuthContext);
 
   async function registerHandler(email: string, displayName: string, password: string, confirmPassword: string) {
     email = email.trim().toLowerCase();
@@ -38,8 +40,17 @@ export default function Register({ navigation }) {
     }
     else {
       setIsAuthenticating(true);
-      await register(email, password).catch(error => {console.log(error.response)});
-      setIsAuthenticating(false);
+
+      try {
+        const token = await register(email, password);
+        setIsAuthenticating(false);
+        authCtx.authenticate(token);
+      }
+      catch (error) {
+        console.log(error.response);
+        Alert.alert("Account creation failed. Please try again later or contact the creator for support.");
+        setIsAuthenticating(false);
+      }
     }
   }
 

@@ -3,21 +3,78 @@ import { StyleSheet, Text, View, TextInput, Button as TextButton } from 'react-n
 import { Button, Input } from 'react-native-elements'
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useContext, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import AppLoading from 'expo-app-loading';
 
 import Login from './auth/Login';
 import Register from './auth/NewUser';
+import AuthContextProvider from './store/auth-context'
+import { AuthContext } from './store/auth-context';
+import WelcomeScreen from './screens/home';
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
 
   return (
+    <AuthContextProvider>
+      <Navigation />
+    </AuthContextProvider>
+  );
+}
+
+function Root() {
+  const [isTryingLogin, setIsTryingLogin] = useState(true);
+  const authCtx = useContext(AuthContext);
+
+  useEffect(async () => {
+    const storedToken = await AsyncStorage.getItem('token')
+      if (storedToken) {
+          authCtx.authenticate(storedToken);
+      }
+      setIsTryingLogin(false);
+    });
+
+  if (isTryingLogin) {
+    return <AppLoading />
+  }
+  return <Navigation />
+}
+
+function Navigation() {
+  const authCtx = useContext(AuthContext);
+
+  return (
     <NavigationContainer>
-      <Stack.Navigator>
-        <Stack.Screen name="Login" component={Login} />
-        <Stack.Screen name="Register" component={Register} />
-      </Stack.Navigator>
+      {!authCtx.isAuthenticated && <AuthStack />}
+      {authCtx.isAuthenticated && <AuthenticatedStack />}
     </NavigationContainer>
+  );
+}
+
+function AuthStack() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="Register" component={Register} />
+    </Stack.Navigator>
+  );
+}
+
+function AuthenticatedStack() {
+  const authCtx = useContext(AuthContext);
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerStyle: { },
+        headerTintColor: 'pink',
+        contentStyle: { },
+      }}
+    >
+      <Stack.Screen name="Welcome" component={WelcomeScreen} options={{
+        headerRight: () => <TextButton title="Log out" onPress={authCtx.logout} />}} />
+    </Stack.Navigator>
   );
 }
 
