@@ -9,7 +9,7 @@ export const EventsContext = createContext({
 function eventsReducer(state, action) {
     switch (action.type) {
         case "ADD":
-            return [...state, action.payload];
+            return [...state, action.payload].sort((a, b) => (a.data().startTime - b.data().startTime));
         case "SET":
             return action.payload;
         default:
