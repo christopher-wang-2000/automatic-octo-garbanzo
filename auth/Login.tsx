@@ -21,9 +21,9 @@ export default function Login({ navigation }) {
     setIsAuthenticating(true);
 
     try {
-      const token = await login(email, password);
+      const { token, uid } = await login(email, password);
       setIsAuthenticating(false);
-      authCtx.authenticate(token);
+      authCtx.authenticate(token, email, uid);
     }
     catch (error) {
       console.log(error.response);

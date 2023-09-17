@@ -42,9 +42,9 @@ export default function Register({ navigation }) {
       setIsAuthenticating(true);
 
       try {
-        const token = await register(email, password);
+        const { token, uid } = await register(email, password);
         setIsAuthenticating(false);
-        authCtx.authenticate(token);
+        authCtx.authenticate(token, email, uid);
       }
       catch (error) {
         console.log(error.response);

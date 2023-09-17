@@ -14,7 +14,9 @@ async function authenticate(email: string, password: string, newAccount: boolean
     );
     console.log(response);
     const token = response.data.idToken;
-    return token;
+    const uid = response.data.localId;
+    console.assert(email === response.data.email, "ERROR: Email returned from request does not equal submitted email!");
+    return { token, uid };
 }
 
 export function register(email: string, password: string) {
