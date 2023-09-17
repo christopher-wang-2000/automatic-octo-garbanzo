@@ -6,7 +6,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
 
-function WelcomeScreen({ navigation }) {
+function MyEventsScreen({ navigation }) {
     const authCtx = useContext(AuthContext);
     const [userEvents, setUserEvents] = useState([]);
 
@@ -25,15 +25,18 @@ function WelcomeScreen({ navigation }) {
 
     return (
         <View style={styles.rootContainer}>
-            <Text style={styles.title}>Welcome {authCtx.email}!</Text>
-            <Text>{authCtx.uid}</Text>
-            <Text>You authenticated successfully!</Text>
-            <Button title="See my events" onPress={() => navigation.navigate("My Events")}></Button>
+            <Text style={styles.title}>My Events</Text>
+            <View style={styles.eventsContainer}>
+                {userEvents.map((event) => {
+                console.log(event.data().title);
+                return <Text key={event.id}>{event.data().title}</Text>})}
+                <Button title="Create new event" onPress={() => navigation.navigate("Create Event")} />
+            </View>
         </View>
     );
 }
 
-export default WelcomeScreen;
+export default MyEventsScreen;
 
 const styles = StyleSheet.create({
   rootContainer: {
@@ -43,8 +46,12 @@ const styles = StyleSheet.create({
     padding: 32,
   },
   title: {
+    flex: 1,
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 8,
   },
+  eventsContainer: {
+    flex: 9,
+  }
 });

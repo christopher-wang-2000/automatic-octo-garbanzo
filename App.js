@@ -12,6 +12,8 @@ import Register from './auth/NewUser';
 import AuthContextProvider from './store/auth-context'
 import { AuthContext } from './store/auth-context';
 import WelcomeScreen from './screens/home';
+import MyEventsScreen from './screens/MyEvents';
+import CreateEventScreen from './screens/CreateEvent';
 
 const Stack = createNativeStackNavigator();
 
@@ -74,6 +76,8 @@ function AuthenticatedStack() {
     >
       <Stack.Screen name="Welcome" component={WelcomeScreen} options={{
         headerRight: () => <TextButton title="Log out" onPress={authCtx.logout} />}} />
+      <Stack.Screen name="My Events" component={MyEventsScreen} />
+      <Stack.Screen name="Create Event" component={CreateEventScreen} />
     </Stack.Navigator>
   );
 }
