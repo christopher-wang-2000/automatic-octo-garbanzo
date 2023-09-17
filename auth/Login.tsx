@@ -6,7 +6,7 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { login } from './Auth';
-import LoadingOverlay from './LoadingOverlay';
+import LoadingOverlay from '../screens/LoadingOverlay';
 import { AuthContext } from '../store/auth-context';
 
 export default function Login({ navigation }) {

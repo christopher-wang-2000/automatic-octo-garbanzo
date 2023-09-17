@@ -8,6 +8,7 @@ import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
 import { EventsContext } from '../store/events-context';
+import LoadingOverlay from './LoadingOverlay';
 
 function CreateEventScreen({ navigation }) {
     const authCtx = useContext(AuthContext);
@@ -15,14 +16,22 @@ function CreateEventScreen({ navigation }) {
     const [eventTitle, setEventTitle] = useState("");
     const [startTime, setStartTime] = useState(new Date());
     const [description, setDescription] = useState("");
+    const [creatingEvent, setCreatingEvent] = useState(false);
 
     const onChange = (event: DateTimePickerEvent, selectedDate: Date) => {
         setStartTime(selectedDate);
     };
 
     async function addEvent() {
+        setCreatingEvent(true);
         const docRef = await addDoc(collection(db, "events"), { title: eventTitle, startTime, description, uid: authCtx.uid });
         eventsCtx.addEvent(await getDoc(docRef));
+        setCreatingEvent(false);
+        navigation.navigate("My Events");
+    }
+
+    if (creatingEvent) {
+        return <LoadingOverlay message="Creating event..."/>
     }
 
     return (
