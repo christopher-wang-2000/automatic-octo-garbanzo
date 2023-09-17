@@ -5,10 +5,12 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
+import { EventsContext } from '../store/events-context';
 
 function MyEventsScreen({ navigation }) {
     const authCtx = useContext(AuthContext);
-    const [userEvents, setUserEvents] = useState([]);
+    const eventsCtx = useContext(EventsContext);
+    // const [userEvents, setUserEvents] = useState([]);
 
     useEffect(() => {
         async function getUserEvents() {
@@ -18,7 +20,8 @@ function MyEventsScreen({ navigation }) {
             for (const doc of querySnapshot.docs) {
                 console.log(doc.data());
             }
-            setUserEvents(querySnapshot.docs);
+            // setUserEvents(querySnapshot.docs);
+            eventsCtx.setEvents(querySnapshot.docs);
         }
         getUserEvents();
     }, []);
@@ -27,8 +30,7 @@ function MyEventsScreen({ navigation }) {
         <View style={styles.rootContainer}>
             <Text style={styles.title}>My Events</Text>
             <View style={styles.eventsContainer}>
-                {userEvents.map((event) => {
-                console.log(event.data().title);
+                {eventsCtx.events.map((event) => {
                 return <Text key={event.id}>{event.data().title}</Text>})}
                 <Button title="Create new event" onPress={() => navigation.navigate("Create Event")} />
             </View>

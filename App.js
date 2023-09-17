@@ -10,6 +10,7 @@ import AppLoading from 'expo-app-loading';
 import Login from './auth/Login';
 import Register from './auth/NewUser';
 import AuthContextProvider from './store/auth-context'
+import EventsContextProvider from './store/events-context';
 import { AuthContext } from './store/auth-context';
 import WelcomeScreen from './screens/home';
 import MyEventsScreen from './screens/MyEvents';
@@ -67,18 +68,20 @@ function AuthStack() {
 function AuthenticatedStack() {
   const authCtx = useContext(AuthContext);
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerStyle: { },
-        headerTintColor: 'pink',
-        contentStyle: { },
-      }}
-    >
-      <Stack.Screen name="Welcome" component={WelcomeScreen} options={{
-        headerRight: () => <TextButton title="Log out" onPress={authCtx.logout} />}} />
-      <Stack.Screen name="My Events" component={MyEventsScreen} />
-      <Stack.Screen name="Create Event" component={CreateEventScreen} />
-    </Stack.Navigator>
+    <EventsContextProvider>
+      <Stack.Navigator
+        screenOptions={{
+          headerStyle: { },
+          headerTintColor: 'pink',
+          contentStyle: { },
+        }}
+      >
+        <Stack.Screen name="Welcome" component={WelcomeScreen} options={{
+          headerRight: () => <TextButton title="Log out" onPress={authCtx.logout} />}} />
+        <Stack.Screen name="My Events" component={MyEventsScreen} />
+        <Stack.Screen name="Create Event" component={CreateEventScreen} />
+      </Stack.Navigator>
+    </EventsContextProvider>
   );
 }
 

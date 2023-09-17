@@ -1,34 +1,37 @@
 import { useContext, useEffect, useState } from 'react';
 import { StyleSheet, Text, View, TextInput } from 'react-native';
 import { Button, Input } from 'react-native-elements';
-import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, getDoc } from "firebase/firestore";
 import RNDateTimePicker from '@react-native-community/datetimepicker';
 import { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
+import { EventsContext } from '../store/events-context';
 
 function CreateEventScreen({ navigation }) {
     const authCtx = useContext(AuthContext);
+    const eventsCtx = useContext(EventsContext);
     const [eventTitle, setEventTitle] = useState("");
-    const [date, setDate] = useState(new Date());
-    const [eventDescription, setEventDescription] = useState("");
+    const [startTime, setStartTime] = useState(new Date());
+    const [description, setDescription] = useState("");
 
     const onChange = (event: DateTimePickerEvent, selectedDate: Date) => {
-        setDate(selectedDate);
+        setStartTime(selectedDate);
     };
 
     async function addEvent() {
-        await addDoc(collection(db, "events"), { title: eventTitle, timestamp: date, description: eventDescription, uid: authCtx.uid })
+        const docRef = await addDoc(collection(db, "events"), { title: eventTitle, startTime, description, uid: authCtx.uid });
+        eventsCtx.addEvent(await getDoc(docRef));
     }
 
     return (
         <View style={styles.rootContainer}>
             <Input placeholder="Event title" onChangeText={setEventTitle} />
-            <RNDateTimePicker value={date} mode="date" onChange={onChange} />
-            <RNDateTimePicker value={date} mode="time" onChange={onChange} />
+            <RNDateTimePicker value={startTime} mode="date" onChange={onChange} />
+            <RNDateTimePicker value={startTime} mode="time" onChange={onChange} />
             <TextInput style={styles.eventDescription} placeholder="Enter a description here..."
-                multiline={true} numberOfLines={5} onChangeText={setEventDescription} />
+                multiline={true} numberOfLines={5} onChangeText={setDescription} />
             <Button title="Create event" onPress={addEvent} />
         </View>
     );
