@@ -6,6 +6,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLoading from 'expo-app-loading';
+import { MenuProvider } from 'react-native-popup-menu';
 
 import Login from './auth/Login';
 import Register from './auth/NewUser';
@@ -22,7 +23,9 @@ export default function App() {
 
   return (
     <AuthContextProvider>
-      <Navigation />
+      <MenuProvider>
+        <Navigation />
+      </MenuProvider>
     </AuthContextProvider>
   );
 }
