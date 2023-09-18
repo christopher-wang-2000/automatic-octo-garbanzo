@@ -12,11 +12,13 @@ import Login from './auth/Login';
 import Register from './auth/NewUser';
 import AuthContextProvider from './store/auth-context'
 import EventsContextProvider from './store/events-context';
+import FriendsContextProvider from './store/friends-context';
 import { AuthContext } from './store/auth-context';
 import WelcomeScreen from './screens/home';
 import MyEventsScreen from './screens/MyEvents';
 import CreateEventScreen from './screens/CreateEvent';
 import UpdateEventScreen from './screens/UpdateEvent';
+import MyFriendsScreen from './screens/Friends';
 
 const Stack = createNativeStackNavigator();
 
@@ -73,18 +75,21 @@ function AuthenticatedStack() {
   const authCtx = useContext(AuthContext);
   return (
     <EventsContextProvider>
-      <Stack.Navigator
-        screenOptions={{
-          headerStyle: { },
-          contentStyle: { },
-        }}
-      >
-        <Stack.Screen name="Welcome" component={WelcomeScreen} options={{
-          headerRight: () => <TextButton title="Log out" onPress={authCtx.logout} />}} />
-        <Stack.Screen name="My Events" component={MyEventsScreen} />
-        <Stack.Screen name="Create Event" component={CreateEventScreen} />
-        <Stack.Screen name="Update Event" component={UpdateEventScreen} />
-      </Stack.Navigator>
+      <FriendsContextProvider>
+        <Stack.Navigator
+          screenOptions={{
+            headerStyle: { },
+            contentStyle: { },
+          }}
+        >
+          <Stack.Screen name="Welcome" component={WelcomeScreen} options={{
+            headerRight: () => <TextButton title="Log out" onPress={authCtx.logout} />}} />
+          <Stack.Screen name="My Events" component={MyEventsScreen} />
+          <Stack.Screen name="Create Event" component={CreateEventScreen} />
+          <Stack.Screen name="Update Event" component={UpdateEventScreen} />
+          <Stack.Screen name="My Friends" component={MyFriendsScreen} />
+        </Stack.Navigator>
+      </FriendsContextProvider>
     </EventsContextProvider>
   );
 }

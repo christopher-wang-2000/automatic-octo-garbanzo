@@ -13,7 +13,8 @@ function WelcomeScreen({ navigation }) {
             <Text style={styles.title}>Welcome {authCtx.email}!</Text>
             <Text>{authCtx.uid}</Text>
             <Text>You authenticated successfully!</Text>
-            <Button title="See my events" onPress={() => navigation.navigate("My Events")}></Button>
+            <Button title="My events" onPress={() => navigation.navigate("My Events")}></Button>
+            <Button title="My friends" onPress={() => navigation.navigate("My Friends")}></Button>
         </View>
     );
 }
