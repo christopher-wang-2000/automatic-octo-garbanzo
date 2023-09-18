@@ -1,10 +1,26 @@
 import { createContext, useReducer } from "react";
 
+function sortFriendDocs(friends) {
+    return friends.sort((a, b) => {
+        const emailA = a.friendDoc.data().email;
+        const emailB = b.friendDoc.data().email;
+        if (emailA < emailB) {
+            return -1;
+        }
+        else if (emailA === emailB) {
+            return 0;
+        }
+        else {
+            return 1;
+        }
+    });
+}
+
 export const FriendsContext = createContext({
     friends: [],
-    addFriend: (friend) => {},
+    addFriend: ({ friendDoc, docId }) => {},
     setFriends: (friends) => {},
-    deleteFriend: (friend) => {},
+    deleteFriend: (friendDoc) => {},
 });
 
 function eventsReducer(state, action) {
@@ -13,11 +29,11 @@ function eventsReducer(state, action) {
     console.log("Payload: ", action.payload);
     switch (action.type) {
         case "ADD":
-            return [...state, action.payload];
+            return sortFriendDocs([...state, action.payload]);
         case "SET":
-            return action.payload;
+            return sortFriendDocs(action.payload);
         case "DELETE":
-            return state.filter((friend) => (friend.id !== action.payload.id));
+            return state.filter(({ friendDoc, docRef }) => (friendDoc.id !== action.payload.id));
         default:
             return state;
     }

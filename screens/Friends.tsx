@@ -9,6 +9,8 @@ import { AuthContext } from '../store/auth-context';
 import { FriendsContext } from '../store/friends-context';
 import LoadingOverlay from './LoadingOverlay';
 
+
+
 function MyFriendsScreen({ navigation }) {
     const authCtx = useContext(AuthContext);
     const friendsCtx = useContext(FriendsContext);
@@ -17,7 +19,7 @@ function MyFriendsScreen({ navigation }) {
     const [newFriendEmail, setNewFriendEmail] = useState("");
     // const [userEvents, setUserEvents] = useState([]);
 
-    function Friend(friendDoc: QueryDocumentSnapshot<DocumentData, DocumentData>) {
+    function displayFriend({ friendDoc, docId }) {
         const data = friendDoc.data();
         console.log("HELLO ", data.email);
         console.log(data);
@@ -28,7 +30,7 @@ function MyFriendsScreen({ navigation }) {
                     <Text style={styles.eventTitle}>{data.email}</Text>
                 </MenuTrigger>
                 <MenuOptions>
-                    <MenuOption text="Remove friend" />
+                    <MenuOption text="Remove friend" onSelect={() => deleteFriend({ friendDoc, docId })} />
                 </MenuOptions>
             </Menu>
         );
@@ -43,17 +45,18 @@ function MyFriendsScreen({ navigation }) {
         }
         else {
             const myUid = authCtx.uid;
-            const friendDoc = querySnapshot.docs[0];
-            const friendUid = friendDoc.data().uid;
-            if (myUid === friendUid) {
+            console.log(querySnapshot.docs);
+            const newFriendDoc = querySnapshot.docs[0];
+            const newFriendUid = newFriendDoc.data().uid;
+            if (myUid === newFriendUid) {
                 Alert.alert("Can't add yourself as a friend!");
             }
-            else if (friendsCtx.friends.some((friendDoc) => (friendDoc.data().uid === friendUid))) {
+            else if (friendsCtx.friends.some(({ friendDoc, _ }) => (friendDoc.data().uid === newFriendUid))) {
                 Alert.alert("This user is already your friend!");
             }
             else {
-                const docRef = await addDoc(collection(db, "friends"), { accepted: true, uids: [myUid, friendUid] });
-                friendsCtx.addFriend(friendDoc);
+                const docRef = await addDoc(collection(db, "friends"), { accepted: true, uids: [myUid, newFriendUid] });
+                friendsCtx.addFriend({ friendDoc: newFriendDoc, docId: docRef.id });
                 setNewFriendEmail("");
                 Alert.alert("New friend added!");
             }
@@ -61,10 +64,12 @@ function MyFriendsScreen({ navigation }) {
         setAddingStatus(false);
     }
 
-    // async function DeleteEvent(event) {
-    //     await deleteDoc(doc(db, "events", event.id));
-    //     eventsCtx.deleteEvent(event);
-    // }
+    async function deleteFriend({ friendDoc, docId }) {
+        console.log(docId);
+        await deleteDoc(doc(db, "friends", docId));
+        friendsCtx.deleteFriend(friendDoc);
+        Alert.alert("Friend successfully removed.")
+    }
 
     // get list of friends from database
     async function getFriends() {
@@ -95,7 +100,7 @@ function MyFriendsScreen({ navigation }) {
                 console.error(`Multiple user documents found associated with uid ${friendUids[i]}`);
             }
             else {
-                return docs[0];
+                return { friendDoc: docs[0], docId: querySnapshot.docs[i].id } ;
             }
         });
         return friends;
@@ -127,7 +132,7 @@ function MyFriendsScreen({ navigation }) {
                 <Button title="Add friend" onPress={addFriend} />
             </View>
             <View style={styles.eventsContainer}>
-                <FlatList data={friendsCtx.friends} renderItem={itemData => Friend(itemData.item)} />
+                <FlatList data={friendsCtx.friends} renderItem={itemData => displayFriend(itemData.item)} />
             </View>
         </View>
     );
