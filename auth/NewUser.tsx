@@ -5,6 +5,9 @@ import { Button, Input } from 'react-native-elements'
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { collection, doc, addDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+
 import { register } from './Auth';
 import LoadingOverlay from '../screens/LoadingOverlay';
 import { AuthContext } from '../store/auth-context';
@@ -43,6 +46,7 @@ export default function Register({ navigation }) {
 
       try {
         const { token, uid } = await register(email, password);
+        await addDoc(collection(db, "users"), { uid, email });
         setIsAuthenticating(false);
         authCtx.authenticate(token, email, uid);
       }

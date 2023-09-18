@@ -1,41 +1,64 @@
 import { useContext, useEffect, useState } from 'react';
 import { Alert, StyleSheet, Text, View, FlatList } from 'react-native';
 import { Input, Button } from 'react-native-elements';
-import { collection, query, where, getDocs, orderBy, doc, addDoc, getDoc, deleteDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, doc, addDoc, getDoc, deleteDoc, QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
 
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
 import { FriendsContext } from '../store/friends-context';
+import LoadingOverlay from './LoadingOverlay';
 
 function MyFriendsScreen({ navigation }) {
     const authCtx = useContext(AuthContext);
     const friendsCtx = useContext(FriendsContext);
+    const [loadingStatus, setLoadingStatus] = useState(true);
+    const [addingStatus, setAddingStatus] = useState(false);
+    const [newFriendEmail, setNewFriendEmail] = useState("");
     // const [userEvents, setUserEvents] = useState([]);
 
-    function Friend(friend) {
-        const data = friend.data();
-        console.log("HELLO!")
+    function Friend(friendDoc: QueryDocumentSnapshot<DocumentData, DocumentData>) {
+        const data = friendDoc.data();
+        console.log("HELLO ", data.email);
         console.log(data);
         console.log(friendsCtx);
         return (
-            <Menu key={friend.id} style={styles.event}>
+            <Menu key={friendDoc.id} style={styles.event}>
                 <MenuTrigger>
-                    <Text style={styles.eventTitle}>{data.friend}</Text>
+                    <Text style={styles.eventTitle}>{data.email}</Text>
                 </MenuTrigger>
                 <MenuOptions>
-                    <MenuOption text="Delete event" />
+                    <MenuOption text="Remove friend" />
                 </MenuOptions>
             </Menu>
         );
     }
 
     async function addFriend() {
-        const friend = newFriend.trim().toLowerCase();
-        const docRef = await addDoc(collection(db, authCtx.email), { friend });
-        friendsCtx.addFriend(await getDoc(docRef));
-        setNewFriend("");
-        Alert.alert("New friend added!");
+        setAddingStatus(true);
+        const friendEmail = newFriendEmail.trim().toLowerCase();
+        const querySnapshot = await getDocs(query(collection(db, "users"), where("email", "==", friendEmail)));
+        if (querySnapshot.empty) {
+            Alert.alert("No user with that email could be found.");
+        }
+        else {
+            const myUid = authCtx.uid;
+            const friendDoc = querySnapshot.docs[0];
+            const friendUid = friendDoc.data().uid;
+            if (myUid === friendUid) {
+                Alert.alert("Can't add yourself as a friend!");
+            }
+            else if (friendsCtx.friends.some((friendDoc) => (friendDoc.data().uid === friendUid))) {
+                Alert.alert("This user is already your friend!");
+            }
+            else {
+                const docRef = await addDoc(collection(db, "friends"), { accepted: true, uids: [myUid, friendUid] });
+                friendsCtx.addFriend(friendDoc);
+                setNewFriendEmail("");
+                Alert.alert("New friend added!");
+            }
+        }
+        setAddingStatus(false);
     }
 
     // async function DeleteEvent(event) {
@@ -43,27 +66,65 @@ function MyFriendsScreen({ navigation }) {
     //     eventsCtx.deleteEvent(event);
     // }
 
+    // get list of friends from database
+    async function getFriends() {
+        const myUid = authCtx.uid;
+        const q = query(collection(db, "friends"), where("uids", "array-contains", myUid));
+        const querySnapshot = await getDocs(q);
+        // for each friendship, keep only the other person's uid and remove your own
+        const friendUids = querySnapshot.docs.map((doc) => {
+            const uidPair = doc.data().uids;
+            const filteredUidPair = uidPair.filter((uid: string) => (uid !== myUid));
+            if (filteredUidPair.length !== 1) {
+                console.error("Unexpected error with friends query");
+            }
+            else {
+                return filteredUidPair[0];
+            }
+        });
+        console.log(friendUids);
+
+        const friendPromises = friendUids.map((uid: string) => getDocs(query(collection(db, "users"), where("uid", "==", uid))));
+        const friendSnapshots = await Promise.all(friendPromises);
+        const friends = friendSnapshots.map((snapshot, i) => {
+            const docs = snapshot.docs;
+            if (docs.length === 0) {
+                console.error(`No user document found associated with uid ${friendUids[i]}`)
+            }
+            else if (docs.length > 1) {
+                console.error(`Multiple user documents found associated with uid ${friendUids[i]}`);
+            }
+            else {
+                return docs[0];
+            }
+        });
+        return friends;
+    }
+
+    // load friends upon first opening page
     useEffect(() => {
-        async function getUserFriends() {
-            const q = query(collection(db, authCtx.email));
-            const querySnapshot = await getDocs(q);
-            console.log(querySnapshot.docs);
-            // setUserEvents(querySnapshot.docs);
-            friendsCtx.setFriends(querySnapshot.docs);
+        async function renderFriends() {
+            const friends = await getFriends();
+            friendsCtx.setFriends(friends);
+            setLoadingStatus(false);
             console.log("Friends: ", friendsCtx.friends);
         }
-        getUserFriends();
+        renderFriends();
     }, []);
 
-    const [newFriend, setNewFriend] = useState("");
-    
+    if (loadingStatus) {
+        return <LoadingOverlay message="Loading friends..." />
+    }
+    else if (addingStatus) {
+        return <LoadingOverlay message="Adding new friend..." />
+    }
 
     return (
         <View style={styles.rootContainer}>
             <Text style={styles.title}>My Friends</Text>
-            <View>
-                <Input placeholder="Enter email here" onChangeText={setNewFriend} />
-                <Button style={styles.createEvent} title="Add new friend" onPress={addFriend} />
+            <View style={styles.createEvent}>
+                <Input placeholder="Enter email here" onChangeText={setNewFriendEmail} />
+                <Button title="Add friend" onPress={addFriend} />
             </View>
             <View style={styles.eventsContainer}>
                 <FlatList data={friendsCtx.friends} renderItem={itemData => Friend(itemData.item)} />
@@ -75,41 +136,44 @@ function MyFriendsScreen({ navigation }) {
 export default MyFriendsScreen;
 
 const styles = StyleSheet.create({
-  rootContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 32,
-  },
-  title: {
-    flex: 1,
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  createEvent: {
-    marginBottom: 10
-  },
-  eventsContainer: {
-    flex: 14,
-    padding: 10,
-    borderColor: "grey",
-    borderWidth: 1
-  },
-  event: {
-    marginVertical: 5,
-    padding: 10,
-    backgroundColor: "lightgreen",
-    borderRadius: 15
-  },
-  eventTitle: {
-    fontWeight: "bold",
-  },
-  eventStartTime: {
-    fontStyle: "italic",
-    marginBottom: 5
-  },
-  eventDescription: {
+    rootContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 32,
+    },
+    title: {
+        flex: 1,
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 8,
+    },
+    createEvent: {
+        marginBottom: 10,
+        flexDirection: "row",
+        width: "80%",
+        justifyContent: "center"
+    },
+    eventsContainer: {
+        flex: 14,
+        padding: 10,
+        borderColor: "grey",
+        borderWidth: 1
+    },
+    event: {
+        marginVertical: 5,
+        padding: 10,
+        backgroundColor: "lightgreen",
+        borderRadius: 15
+    },
+    eventTitle: {
+        fontWeight: "bold",
+    },
+    eventStartTime: {
+        fontStyle: "italic",
+        marginBottom: 5
+    },
+    eventDescription: {
 
-  }
+    }
 });

@@ -8,11 +8,13 @@ export const FriendsContext = createContext({
 });
 
 function eventsReducer(state, action) {
+    console.log(state);
+    console.log(action.type);
+    console.log("Payload: ", action.payload);
     switch (action.type) {
         case "ADD":
             return [...state, action.payload];
         case "SET":
-            console.log("Payload: ", action.payload);
             return action.payload;
         case "DELETE":
             return state.filter((friend) => (friend.id !== action.payload.id));
