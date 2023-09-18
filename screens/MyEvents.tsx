@@ -26,7 +26,7 @@ function MyEventsScreen({ navigation }) {
                     <Text style={styles.eventDescription}>{data.description}</Text>
                 </MenuTrigger>
                 <MenuOptions>
-                    <MenuOption onSelect={() => alert("Editing TBD")} text="Edit event" />
+                    <MenuOption onSelect={() => {console.log(event); navigation.navigate("Update Event", { eventId: event.id, eventData: event.data() })}} text="Update event" />
                     <MenuOption onSelect={() => DeleteEvent(event)} text="Delete event" />
                 </MenuOptions>
             </Menu>

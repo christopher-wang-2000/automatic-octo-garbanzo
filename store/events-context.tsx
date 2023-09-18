@@ -4,15 +4,27 @@ export const EventsContext = createContext({
     events: [],
     addEvent: (event) => {},
     setEvents: (events) => {},
+    updateEvent: (event) => {},
     deleteEvent: (event) => {},
 });
+
+function sortEvents(state) {
+    return state.sort((a, b) => (a.data().startTime - b.data().startTime));
+}
 
 function eventsReducer(state, action) {
     switch (action.type) {
         case "ADD":
-            return [...state, action.payload].sort((a, b) => (a.data().startTime - b.data().startTime));
+            return sortEvents([...state, action.payload]);
         case "SET":
             return action.payload;
+        case "UPDATE":
+            return sortEvents(state.map((event) => {
+                if (event.id === action.payload.id) {
+                    return action.payload;
+                }
+                return event;
+            }));
         case "DELETE":
             return state.filter((event) => (event.id !== action.payload.id));
         default:
@@ -31,6 +43,10 @@ export default function EventsContextProvider({ children }) {
         dispatch({ type: "SET", payload: events });
     }
 
+    function updateEvent(event) {
+        dispatch({ type: "UPDATE", payload: event });
+    }
+
     function deleteEvent(event) {
         dispatch({ type: "DELETE", payload: event });
     }
@@ -39,6 +55,7 @@ export default function EventsContextProvider({ children }) {
         events: eventsState,
         addEvent: addEvent,
         setEvents: setEvents,
+        updateEvent: updateEvent,
         deleteEvent: deleteEvent,
     }
 
