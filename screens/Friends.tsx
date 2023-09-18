@@ -11,8 +11,14 @@ import LoadingOverlay from './LoadingOverlay';
 
 export enum RequestStatus { Incoming, Accepted, Outgoing };
 
-export class Friend {
+export async function loadFriends(myUid: string, friendsCtx) {
+    const q = query(collection(db, "friends"), where("uids", "array-contains", myUid));
+    const querySnapshot = await getDocs(q);
+    const friends = await Promise.all(querySnapshot.docs.map((doc) => Friend.make(doc, myUid)));
+    friendsCtx.setFriends(friends);
+}
 
+export class Friend {
     public constructor(
         public readonly userData: DocumentData,
         public readonly friendshipDocId: string,
@@ -97,7 +103,6 @@ export default function MyFriendsScreen({ navigation }) {
             Alert.alert(`No user with email \"${friendEmail}\" could be found.`);
         }
         else {
-            console.log(querySnapshot.docs);
             const friendData = querySnapshot.docs[0].data();
             const newFriendUid = friendData.uid;
             if (myUid === newFriendUid) {
@@ -127,17 +132,14 @@ export default function MyFriendsScreen({ navigation }) {
         setAddingStatus(false);
     }
 
-    // load friends into context upon first opening page
-    async function loadFriends() {
-        setLoadingStatus(true);
-        const myUid = authCtx.uid;
-        const q = query(collection(db, "friends"), where("uids", "array-contains", myUid));
-        const querySnapshot = await getDocs(q);
-        const friends = await Promise.all(querySnapshot.docs.map((doc) => Friend.make(doc, myUid)));
-        friendsCtx.setFriends(friends);
-        setLoadingStatus(false);
-    }
-    useEffect(() => { loadFriends(); }, []);
+    useEffect(() => {
+        async function loadFriendsAndWait() {
+            setLoadingStatus(true);
+            await loadFriends(myUid, friendsCtx);
+            setLoadingStatus(false);
+        }
+        loadFriendsAndWait();
+    }, []);
 
     async function removeFriend(friend: Friend, message: string) {
         friend.remove();

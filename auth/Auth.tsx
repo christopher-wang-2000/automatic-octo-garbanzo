@@ -12,7 +12,6 @@ async function authenticate(email: string, password: string, newAccount: boolean
             returnSecureToken: true
         }
     );
-    console.log(response);
     const token = response.data.idToken;
     const uid = response.data.localId;
     console.assert(email === response.data.email, "ERROR: Email returned from request does not equal submitted email!");

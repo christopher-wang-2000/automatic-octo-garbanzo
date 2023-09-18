@@ -15,7 +15,7 @@ import EventsContextProvider from './store/events-context';
 import FriendsContextProvider from './store/friends-context';
 import { AuthContext } from './store/auth-context';
 import WelcomeScreen from './screens/home';
-import MyEventsScreen from './screens/MyEvents';
+import EventsScreen from './screens/Events';
 import CreateEventScreen from './screens/CreateEvent';
 import UpdateEventScreen from './screens/UpdateEvent';
 import MyFriendsScreen from './screens/Friends';
@@ -84,7 +84,7 @@ function AuthenticatedStack() {
         >
           <Stack.Screen name="Welcome" component={WelcomeScreen} options={{
             headerRight: () => <TextButton title="Log out" onPress={authCtx.logout} />}} />
-          <Stack.Screen name="My Events" component={MyEventsScreen} />
+          <Stack.Screen name="My Events" component={EventsScreen} />
           <Stack.Screen name="Create Event" component={CreateEventScreen} />
           <Stack.Screen name="Update Event" component={UpdateEventScreen} />
           <Stack.Screen name="My Friends" component={MyFriendsScreen} />
