@@ -1,13 +1,15 @@
 import { createContext, useReducer } from "react";
 
-function sortFriendDocs(friends) {
+import { Friend } from "../screens/Friends";
+
+function sortFriends(friends: Array<Friend>, key) {
     return friends.sort((a, b) => {
-        const emailA = a.friendDoc.data().email;
-        const emailB = b.friendDoc.data().email;
-        if (emailA < emailB) {
+        const keyA = key(a);
+        const keyB = key(b);
+        if (keyA < keyB) {
             return -1;
         }
-        else if (emailA === emailB) {
+        else if (keyA === keyB) {
             return 0;
         }
         else {
@@ -18,47 +20,45 @@ function sortFriendDocs(friends) {
 
 export const FriendsContext = createContext({
     friends: [],
-    addFriend: ({ friendDoc, docId }) => {},
-    setFriends: (friends) => {},
-    deleteFriend: (friendDoc) => {},
+    addFriend: (friend: Friend) => {},
+    deleteFriend: (friend: Friend) => {},
+    setFriends: (friends: Array<Friend>) => {},
 });
 
-function eventsReducer(state, action) {
-    console.log(state);
-    console.log(action.type);
-    console.log("Payload: ", action.payload);
+function eventsReducer(state: Array<Friend>, action: { type: string, payload }) {
+    const key = (friend: Friend) => friend.email;
     switch (action.type) {
         case "ADD":
-            return sortFriendDocs([...state, action.payload]);
+            return sortFriends([...state, action.payload], key);
         case "SET":
-            return sortFriendDocs(action.payload);
+            return sortFriends(action.payload, key);
         case "DELETE":
-            return state.filter(({ friendDoc, docRef }) => (friendDoc.id !== action.payload.id));
+            return state.filter((friend) => (friend.uid !== action.payload.uid));
         default:
             return state;
     }
 }
 
 export default function FriendsContextProvider({ children }) {
-    const [eventsState, dispatch] = useReducer(eventsReducer, []);
+    const [friendState, dispatch] = useReducer(eventsReducer, []);
 
-    function addEvent(event) {
-        dispatch({ type: "ADD", payload: event });
+    function addFriend(friend: Friend) {
+        dispatch({ type: "ADD", payload: friend });
     }
 
-    function setEvents(events) {
-        dispatch({ type: "SET", payload: events });
+    function deleteFriend(friend: Friend) {
+        dispatch({ type: "DELETE", payload: friend });
     }
 
-    function deleteEvent(event) {
-        dispatch({ type: "DELETE", payload: event });
+    function setFriends(friends: Array<Friend>) {
+        dispatch({ type: "SET", payload: friends });
     }
 
     const value = {
-        friends: eventsState,
-        addFriend: addEvent,
-        setFriends: setEvents,
-        deleteFriend: deleteEvent,
+        friends: friendState,
+        addFriend,
+        deleteFriend,
+        setFriends,
     }
 
     return <FriendsContext.Provider value={value}>{children}</FriendsContext.Provider>
