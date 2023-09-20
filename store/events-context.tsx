@@ -1,32 +1,33 @@
 import { createContext, useReducer } from "react";
+import { Event } from "../screens/Events";
 
 export const EventsContext = createContext({
     events: [],
-    addEvent: (event) => {},
-    setEvents: (events) => {},
-    updateEvent: (event) => {},
-    deleteEvent: (event) => {},
+    addEvent: (event: Event) => {},
+    updateEvent: (event: Event) => {},
+    deleteEvent: (event: Event) => {},
+    setEvents: (events: Array<Event>) => {},
 });
 
-function sortEvents(state) {
-    return state.sort((a, b) => (a.data().startTime - b.data().startTime));
+function sortEvents(state: Array<Event>) {
+    return state.sort((a, b) => (a.startTime.getTime() - b.startTime.getTime()));
 }
 
-function eventsReducer(state, action) {
+function eventsReducer(state: Array<Event>, action: { type: string, payload }) {
     switch (action.type) {
         case "ADD":
             return sortEvents([...state, action.payload]);
-        case "SET":
-            return action.payload;
         case "UPDATE":
             return sortEvents(state.map((event) => {
-                if (event.id === action.payload.id) {
+                if (event.docId === action.payload.docId) {
                     return action.payload;
                 }
                 return event;
             }));
         case "DELETE":
-            return state.filter((event) => (event.id !== action.payload.id));
+            return state.filter((event) => (event.docId !== action.payload.docId));
+        case "SET":
+            return action.payload;
         default:
             return state;
     }
@@ -35,28 +36,28 @@ function eventsReducer(state, action) {
 export default function EventsContextProvider({ children }) {
     const [eventsState, dispatch] = useReducer(eventsReducer, []);
 
-    function addEvent(event) {
+    function addEvent(event: Event) {
         dispatch({ type: "ADD", payload: event });
     }
 
-    function setEvents(events) {
-        dispatch({ type: "SET", payload: events });
-    }
-
-    function updateEvent(event) {
+    function updateEvent(event: Event) {
         dispatch({ type: "UPDATE", payload: event });
     }
 
-    function deleteEvent(event) {
+    function deleteEvent(event: Event) {
         dispatch({ type: "DELETE", payload: event });
+    }
+
+    function setEvents(events: Array<Event>) {
+        dispatch({ type: "SET", payload: events });
     }
 
     const value = {
         events: eventsState,
         addEvent: addEvent,
-        setEvents: setEvents,
         updateEvent: updateEvent,
         deleteEvent: deleteEvent,
+        setEvents: setEvents,
     }
 
     return <EventsContext.Provider value={value}>{children}</EventsContext.Provider>

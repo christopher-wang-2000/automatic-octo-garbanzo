@@ -9,6 +9,7 @@ import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
 import { EventsContext } from '../store/events-context';
 import LoadingOverlay from './LoadingOverlay';
+import { createEventFromDoc } from './Events';
 
 function UpdateEventScreen({ navigation, ...props }) {
     const authCtx = useContext(AuthContext);
@@ -29,7 +30,7 @@ function UpdateEventScreen({ navigation, ...props }) {
         setCreatingEvent(true);
         const docRef = doc(db, "events", eventId);
         await updateDoc(docRef, { title: eventTitle, startTime, description });
-        eventsCtx.updateEvent(await getDoc(docRef));
+        eventsCtx.updateEvent(createEventFromDoc(await getDoc(docRef)));
         setCreatingEvent(false);
         navigation.navigate("My Events");
     }
