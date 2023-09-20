@@ -11,11 +11,9 @@ function WelcomeScreen({ navigation }) {
     return (
         <View style={styles.rootContainer}>
             <Text style={styles.title}>Welcome {authCtx.email}!</Text>
-            <Text>{authCtx.uid}</Text>
-            <Text>You authenticated successfully!</Text>
-            <Button title="All events" onPress={() => navigation.navigate("My Events")}></Button>
-            <Button title="My events" onPress={() => navigation.navigate("My Events", { uids: [myUid] })}></Button>
-            <Button title="My friends" onPress={() => navigation.navigate("My Friends")}></Button>
+            <Button style={styles.button} title="Browse upcoming events" onPress={() => navigation.navigate("Events", { title: "Upcoming events" })}></Button>
+            <Button style={styles.button} title="My scheduled events" onPress={() => navigation.navigate("Events", { title: "My scheduled events", uids: [myUid] })}></Button>
+            <Button style={styles.button} title="My friends list" onPress={() => navigation.navigate("My Friends")}></Button>
         </View>
     );
 }
@@ -33,5 +31,9 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginBottom: 8,
+    textAlign: "center"
   },
+  button: {
+    margin: 5,
+  }
 });

@@ -17,8 +17,13 @@ import { AuthContext } from './store/auth-context';
 import WelcomeScreen from './screens/home';
 import EventsScreen from './screens/Events';
 import CreateEventScreen from './screens/CreateEvent';
-import UpdateEventScreen from './screens/UpdateEvent';
 import MyFriendsScreen from './screens/Friends';
+
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs([
+  'Non-serializable values were found in the navigation state',
+]);
 
 const Stack = createNativeStackNavigator();
 
@@ -84,9 +89,8 @@ function AuthenticatedStack() {
         >
           <Stack.Screen name="Welcome" component={WelcomeScreen} options={{
             headerRight: () => <TextButton title="Log out" onPress={authCtx.logout} />}} />
-          <Stack.Screen name="My Events" component={EventsScreen} />
+          <Stack.Screen name="Events" component={EventsScreen} />
           <Stack.Screen name="Create Event" component={CreateEventScreen} />
-          <Stack.Screen name="Update Event" component={UpdateEventScreen} />
           <Stack.Screen name="My Friends" component={MyFriendsScreen} />
         </Stack.Navigator>
       </FriendsContextProvider>

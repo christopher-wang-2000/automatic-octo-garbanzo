@@ -47,11 +47,16 @@ export default function EventsScreen({ navigation, ...props }) {
     const isMyEvent = (event.creatorUid === myUid)
     const creator = isMyEvent ? "me" : friendUidMap.get(event.creatorUid);
     const oneDay = (event.startTime.toLocaleDateString() === event.endTime.toLocaleDateString())
+    const currentTime = new Date().getTime();
+    const inProgress = (currentTime >= event.startTime.getTime()) && (currentTime < event.endTime.getTime());
+    const ended = (currentTime >= event.endTime.getTime());
 
     return (
       <Menu key={event.docId} style={isMyEvent ? styles.myEvent : styles.otherEvent}>
         <MenuTrigger>
           <Text style={styles.eventTitle}>{event.title}</Text>
+          {inProgress && <Text style={styles.eventStatus}>(IN PROGRESS)</Text>}
+          {ended && <Text style={styles.eventStatus}>(ENDED)</Text>}
           {oneDay && <Text style={styles.eventTime}>{event.startTime.toLocaleDateString() + ", " +
             event.startTime.toLocaleTimeString(undefined, { timeStyle: "short" })
             + " to " + event.endTime.toLocaleTimeString(undefined, { timeStyle: "short" })}</Text>}
@@ -63,8 +68,8 @@ export default function EventsScreen({ navigation, ...props }) {
           {event.description && <Text style={styles.eventDescription}>{event.description}</Text>}
         </MenuTrigger>
         <MenuOptions>
-          {isMyEvent && <MenuOption onSelect={() => { navigation.navigate("Update Event", { event }) }} text="Update event" />}
-          {isMyEvent && <MenuOption onSelect={() => deleteEvent(event)} text="Delete event" />}
+          {isMyEvent && <MenuOption text="Update event" onSelect={() => { navigation.navigate("Create Event", { event }) }} />}
+          {isMyEvent && <MenuOption text="Delete event" onSelect={() => deleteEvent(event)} />}
         </MenuOptions>
       </Menu>
     );
@@ -106,7 +111,7 @@ export default function EventsScreen({ navigation, ...props }) {
 
   return (
     <View style={styles.rootContainer}>
-      <Text style={styles.title}>My Events</Text>
+      <Text style={styles.title}>{props?.route?.params?.title}</Text>
       <Button style={styles.createEvent} title="Create new event" onPress={() => navigation.navigate("Create Event")} />
       <Text>Timezone: {timezone}</Text>
       <Text>Scroll up to refresh</Text>
@@ -163,6 +168,9 @@ const styles = StyleSheet.create({
   },
   eventTitle: {
     fontWeight: "bold",
+  },
+  eventStatus: {
+    fontWeight: "bold"
   },
   eventTime: {
     fontStyle: "italic",
