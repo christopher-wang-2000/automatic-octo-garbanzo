@@ -27,7 +27,7 @@ function eventsReducer(state: Array<Event>, action: { type: string, payload }) {
         case "DELETE":
             return state.filter((event) => (event.docId !== action.payload.docId));
         case "SET":
-            return action.payload;
+            return sortEvents(action.payload);
         default:
             return state;
     }

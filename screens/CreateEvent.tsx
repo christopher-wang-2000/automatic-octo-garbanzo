@@ -33,7 +33,14 @@ function CreateEventScreen({ navigation, ...props }) {
         }
         else {
             setCreatingEvent(true);
-            const docRef = await addDoc(collection(db, "events"), { title, startTime, endTime, description, uid: authCtx.uid });
+            const docRef = await addDoc(collection(db, "events"),
+                {   title,
+                    startTime,
+                    endTime,
+                    description,
+                    uid: authCtx.uid,
+                    rsvps: [authCtx.uid]
+                });
             eventsCtx.addEvent(createEventFromDoc(await getDoc(docRef)));
             setCreatingEvent(false);
             Alert.alert("Event created!");

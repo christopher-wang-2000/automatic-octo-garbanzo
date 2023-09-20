@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import { StyleSheet, Text, View, FlatList, RefreshControl } from 'react-native';
 import { Button } from 'react-native-elements';
-import { collection, query, where, getDocs, orderBy, doc, deleteDoc, DocumentData } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, doc, deleteDoc, updateDoc, Query, DocumentData, arrayUnion, arrayRemove } from "firebase/firestore";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
 import { getCalendars } from 'expo-localization';
 
@@ -19,12 +19,19 @@ export type Event = {
   endTime: Date,
   description: string,
   creatorUid: string,
-  comingUids: Array<string>
+  rsvps: Array<string>
 }
 
 export function createEventFromDoc(document: DocumentData) {
   const data = document.data();
-  return { docId: document.id, title: data.title, startTime: data.startTime.toDate(), endTime: data.endTime?.toDate(), description: data.description, creatorUid: data.uid, comingUids: [] };
+  return {  docId: document.id,
+            title: data.title,
+            startTime: data.startTime.toDate(),
+            endTime: data.endTime.toDate(),
+            description: data.description,
+            creatorUid: data.uid,
+            rsvps: data.rsvps
+          };
 }
 
 export default function EventsScreen({ navigation, ...props }) {
@@ -45,18 +52,20 @@ export default function EventsScreen({ navigation, ...props }) {
 
   function renderEvent(event: Event) {
     const isMyEvent = (event.creatorUid === myUid)
-    const creator = isMyEvent ? "me" : friendUidMap.get(event.creatorUid);
+    const creator = isMyEvent ? "you" : friendUidMap.get(event.creatorUid);
     const oneDay = (event.startTime.toLocaleDateString() === event.endTime.toLocaleDateString())
     const currentTime = new Date().getTime();
     const inProgress = (currentTime >= event.startTime.getTime()) && (currentTime < event.endTime.getTime());
     const ended = (currentTime >= event.endTime.getTime());
+    const rsvpd = (event.rsvps.includes(myUid));
 
     return (
-      <Menu key={event.docId} style={isMyEvent ? styles.myEvent : styles.otherEvent}>
+      <Menu key={event.docId} style={rsvpd ? styles.rsvpdEvent : styles.otherEvent}>
         <MenuTrigger>
           <Text style={styles.eventTitle}>{event.title}</Text>
           {inProgress && <Text style={styles.eventStatus}>(IN PROGRESS)</Text>}
           {ended && <Text style={styles.eventStatus}>(ENDED)</Text>}
+
           {oneDay && <Text style={styles.eventTime}>{event.startTime.toLocaleDateString() + ", " +
             event.startTime.toLocaleTimeString(undefined, { timeStyle: "short" })
             + " to " + event.endTime.toLocaleTimeString(undefined, { timeStyle: "short" })}</Text>}
@@ -64,15 +73,34 @@ export default function EventsScreen({ navigation, ...props }) {
             + event.startTime.toLocaleTimeString(undefined, { timeStyle: "short" })}</Text>}
           {!oneDay && <Text style={styles.eventTime}>Ends: {event.endTime.toLocaleDateString() + " "
             + event.endTime.toLocaleTimeString(undefined, { timeStyle: "short" })}</Text>}
+
           <Text style={styles.eventCreatedBy}>Created by {creator}</Text>
           {event.description && <Text style={styles.eventDescription}>{event.description}</Text>}
+
+          {!rsvpd && event.rsvps.length === 1 && <Text style={styles.eventRsvp}>1 person is coming</Text>}
+          {!rsvpd && event.rsvps.length > 1 && <Text style={styles.eventRsvp}>{event.rsvps.length} people are coming</Text>}
+          {rsvpd &&event.rsvps.length === 2 && <Text style={styles.eventRsvp}>You and {event.rsvps.length-1} other are coming</Text>}
+          {rsvpd &&event.rsvps.length !== 2 && <Text style={styles.eventRsvp}>You and {event.rsvps.length-1} others are coming</Text>}
         </MenuTrigger>
         <MenuOptions>
           {isMyEvent && <MenuOption text="Update event" onSelect={() => { navigation.navigate("Create Event", { event }) }} />}
           {isMyEvent && <MenuOption text="Delete event" onSelect={() => deleteEvent(event)} />}
+          {!rsvpd && !ended && <MenuOption text="RSVP" onSelect={() => rsvp(event)}/>}
+          {rsvpd && !ended && <MenuOption text="Cancel RSVP" onSelect={() => unrsvp(event)}/>}
         </MenuOptions>
       </Menu>
     );
+  }
+
+  async function rsvp(event: Event) {
+    await updateDoc(doc(db, "events", event.docId), { rsvps: arrayUnion(myUid) });
+    event.rsvps.push(myUid);
+    eventsCtx.updateEvent(event);
+  }
+  async function unrsvp(event: Event) {
+    await updateDoc(doc(db, "events", event.docId), { rsvps: arrayRemove(myUid) });
+    event.rsvps = event.rsvps.filter((uid) => uid !== myUid);
+    eventsCtx.updateEvent(event);
   }
 
   async function deleteEvent(event: Event) {
@@ -88,7 +116,13 @@ export default function EventsScreen({ navigation, ...props }) {
     const allUids: Array<string> = [myUid, ...friendUids];
     const uidsToUse: Array<string> = (props?.route?.params?.uids) ? allUids.filter((uid) => props.route.params.uids.includes(uid)) : allUids;
 
-    const q = query(collection(db, "events"), where("uid", "in", uidsToUse), orderBy("startTime"));
+    let q: Query<DocumentData, DocumentData>;
+    if (props?.route?.params?.rsvpdOnly) {
+      q = query(collection(db, "events"), where("rsvps", "array-contains", myUid));
+    }
+    else {
+      q = query(collection(db, "events"), where("uid", "in", uidsToUse));
+    }
     const querySnapshot = await getDocs(q);
     const events: Array<Event> = querySnapshot.docs.map(createEventFromDoc);
     eventsCtx.setEvents(events);
@@ -144,17 +178,17 @@ const styles = StyleSheet.create({
   },
   eventsContainer: {
     flex: 14,
-    padding: 10,
+    padding: 5,
     borderColor: "grey",
     borderWidth: 1,
-    width: "90%",
+    width: "100%",
   },
   noEventText: {
     color: "grey",
     textAlign: "center",
     fontStyle: "italic"
   },
-  myEvent: {
+  rsvpdEvent: {
     marginVertical: 5,
     padding: 10,
     backgroundColor: "lightgreen",
@@ -177,8 +211,13 @@ const styles = StyleSheet.create({
   },
   eventCreatedBy: {
     fontStyle: "italic",
+    
   },
   eventDescription: {
     marginTop: 5
-  }
+  },
+  eventRsvp: {
+    fontStyle: "italic",
+    marginTop: 5
+  },
 });

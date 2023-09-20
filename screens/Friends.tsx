@@ -226,7 +226,8 @@ const styles = StyleSheet.create({
         flex: 14,
         padding: 10,
         borderColor: "grey",
-        borderWidth: 1
+        borderWidth: 1,
+        width: "80%"
     },
     accepted: {
         marginVertical: 5,
