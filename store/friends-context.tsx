@@ -31,8 +31,6 @@ export const FriendsContext = createContext({
 });
 
 function eventsReducer(state: Array<Friend>, action: { type: string, payload }) {
-    const key = (friend: Friend) => friend.email;
-
     let newState: Array<Friend> = state;
     switch (action.type) {
         case "ADD":

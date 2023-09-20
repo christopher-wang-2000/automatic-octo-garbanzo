@@ -11,11 +11,11 @@ import LoadingOverlay from './LoadingOverlay';
 
 export enum RequestStatus { Incoming, Accepted, Outgoing };
 
-export async function loadFriends(myUid: string, friendsCtx) {
+export async function loadFriends(myUid: string) {
     const q = query(collection(db, "friends"), where("uids", "array-contains", myUid));
     const querySnapshot = await getDocs(q);
     const friends = await Promise.all(querySnapshot.docs.map((doc) => Friend.make(doc, myUid)));
-    friendsCtx.setFriends(friends);
+    return friends;
 }
 
 export class Friend {
@@ -135,7 +135,8 @@ export default function MyFriendsScreen({ navigation }) {
     useEffect(() => {
         async function loadFriendsAndWait() {
             setLoadingStatus(true);
-            await loadFriends(myUid, friendsCtx);
+            const friends = await loadFriends(myUid);
+            friendsCtx.setFriends(friends);
             setLoadingStatus(false);
         }
         loadFriendsAndWait();

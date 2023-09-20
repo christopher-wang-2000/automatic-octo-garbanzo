@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { StyleSheet, Text, View, FlatList } from 'react-native';
+import { StyleSheet, Text, View, FlatList, RefreshControl } from 'react-native';
 import { Button } from 'react-native-elements';
 import { collection, query, where, getDocs, orderBy, doc, deleteDoc, DocumentData } from "firebase/firestore";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
@@ -8,17 +8,18 @@ import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
 import { EventsContext } from '../store/events-context';
 import { FriendsContext } from '../store/friends-context';
-import { loadFriends } from './Friends';
+import { Friend, loadFriends } from './Friends';
+import LoadingOverlay from './LoadingOverlay';
 
 export default function EventsScreen({ navigation, ...props }) {
     const authCtx = useContext(AuthContext);
     const eventsCtx = useContext(EventsContext);
     const friendsCtx = useContext(FriendsContext);
 
+    const [loading, setLoading] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
+
     const myUid: string = authCtx.uid;
-    loadFriends(myUid, friendsCtx);
-    const friendUids: Array<string> = friendsCtx.friends.map((friend) => friend.uid);
-    const allUids: Array<string> = [myUid, ...friendUids];
     const friendUidMap: Map<String, String> = new Map();
     for (const friend of friendsCtx.friends) {
       friendUidMap.set(friend.uid, friend.email);
@@ -50,18 +51,40 @@ export default function EventsScreen({ navigation, ...props }) {
     }
 
     async function getEvents() {
-      const q = query(collection(db, "events"), where("uid", "in", allUids), orderBy("startTime"));
+      setRefreshing(true);
+      const friends = await loadFriends(myUid);
+      friendsCtx.setFriends(friends);
+      const friendUids: Array<string> = friends.map((friend: Friend) => friend.uid);
+      const allUids: Array<string> = [myUid, ...friendUids];
+      const uidsToUse: Array<string> = (props?.route?.params?.uids) ? allUids.filter((uid) => props.route.params.uids.includes(uid)) : allUids;
+
+      const q = query(collection(db, "events"), where("uid", "in", uidsToUse), orderBy("startTime"));
       const querySnapshot = await getDocs(q);
       eventsCtx.setEvents(querySnapshot.docs);
+      setRefreshing(false);
     }
-    useEffect(() => { getEvents(); }, []);
+    useEffect(() => {
+      async function loadEvents() {
+        setLoading(true);
+        await getEvents();
+        setLoading(false);
+      }
+      loadEvents();
+    }, []);
+
+    if (loading) {
+      return <LoadingOverlay message="Loading events..." />
+    }
 
     return (
         <View style={styles.rootContainer}>
             <Text style={styles.title}>My Events</Text>
             <Button style={styles.createEvent} title="Create new event" onPress={() => navigation.navigate("Create Event")} />
             <View style={styles.eventsContainer}>
-                <FlatList data={eventsCtx.events} renderItem={itemData => renderEvent(itemData.item)} />
+                <FlatList data={eventsCtx.events} renderItem={itemData => renderEvent(itemData.item)}
+                  refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={() => { getEvents(); }} />
+                  } />
             </View>
         </View>
     );
