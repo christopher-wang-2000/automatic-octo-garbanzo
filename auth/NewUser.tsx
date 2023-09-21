@@ -46,7 +46,7 @@ export default function Register({ navigation }) {
 
       try {
         const { token, uid } = await register(email, password);
-        await addDoc(collection(db, "users"), { uid, email });
+        await addDoc(collection(db, "users"), { uid, email, displayName });
         setIsAuthenticating(false);
         authCtx.authenticate(token, email, uid);
       }
