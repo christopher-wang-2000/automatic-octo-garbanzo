@@ -5,7 +5,7 @@ import { Button, Input } from 'react-native-elements'
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import { collection, doc, addDoc } from 'firebase/firestore';
+import { collection, doc, addDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 import { register } from './Auth';
@@ -14,29 +14,34 @@ import { AuthContext } from '../store/auth-context';
 
 export default function Register({ navigation }) {
   const [enteredEmail, setEnteredEmail] = useState('');
-  const [enteredDisplayName, setEnteredDisplayName] = useState('');
+  const [enteredFirstName, setEnteredFirstName] = useState('');
+  const [enteredLastName, setEnteredLastName] = useState('');
   const [enteredPassword, setEnteredPassword] = useState('');
   const [enteredConfirmPassword, setEnteredConfirmPassword] = useState('');
 
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const authCtx = useContext(AuthContext);
 
-  async function registerHandler(email: string, displayName: string, password: string, confirmPassword: string) {
+  async function registerHandler(email: string, firstName: string, lastName: string, password: string, confirmPassword: string) {
     email = email.trim().toLowerCase();
   
     const emailIsValid = email.includes('@');
-    const displayNameIsValid = (displayName.length >= 2) && (displayName.length <= 20);
-    const passwordIsValid = (password.length >= 6) && (password.length <= 20);
+    const firstNameIsValid = (firstName.length >= 1) && (firstName.length <= 20);
+    const lastNameIsValid = (lastName.length >= 1) && (lastName.length <= 20);
+    const passwordIsValid = (password.length >= 6) && (password.length <= 30);
     const passwordsAreEqual = password === confirmPassword;
   
     if (!emailIsValid) {
       Alert.alert('Invalid email entered.');
     }
-    else if (!displayNameIsValid) {
-      Alert.alert('Display name must be between 2 and 20 characters long.');
+    else if (!firstNameIsValid) {
+      Alert.alert('First name must be between 1 and 20 characters long.');
+    }
+    else if (!lastNameIsValid) {
+      Alert.alert('First name must be between 1 and 20 characters long.');
     }
     else if (!passwordIsValid) {
-      Alert.alert('Password must be between 6 and 20 characters long.');
+      Alert.alert('Password must be between 6 and 30 characters long.');
     }
     else if (!passwordsAreEqual) {
       Alert.alert('Passwords do not match.');
@@ -46,13 +51,14 @@ export default function Register({ navigation }) {
 
       try {
         const { token, uid } = await register(email, password);
-        await addDoc(collection(db, "users"), { uid, email, displayName });
+        await setDoc(doc(db, "users", uid),
+          { uid, email, firstName, lastName, fullName: firstName + " " + lastName });
         setIsAuthenticating(false);
-        authCtx.authenticate(token, email, uid);
+        authCtx.authenticate(token, email, uid, firstName, lastName);
       }
       catch (error) {
         console.log(error.response);
-        Alert.alert("Account creation failed. Please try again later or contact the creator for support.");
+        Alert.alert("Account creation failed. Please try again later or contact the creator for support. (Maybe the email is already in use, or the server is down?)");
         setIsAuthenticating(false);
       }
     }
@@ -65,10 +71,12 @@ export default function Register({ navigation }) {
   return (
     <View style={styles.container}>
         <Input placeholder="Email address" onChangeText={setEnteredEmail}/>
-        <Input placeholder="Display name" onChangeText={setEnteredDisplayName}/>
+        <Input placeholder="First name" onChangeText={setEnteredFirstName}/>
+        <Input placeholder="Last name" onChangeText={setEnteredLastName}/>
         <Input placeholder="Password" onChangeText={setEnteredPassword} secureTextEntry={true}/>
         <Input placeholder="Confirm password" onChangeText={setEnteredConfirmPassword} secureTextEntry={true}/>
-        <Button title="Register account" onPress={() => registerHandler(enteredEmail, enteredDisplayName, enteredPassword, enteredConfirmPassword)}/>
+        <Button title="Register account" onPress={() =>
+          registerHandler(enteredEmail, enteredFirstName, enteredLastName, enteredPassword, enteredConfirmPassword)}/>
         <TextButton title="Sign in with existing account" onPress={() => navigation.navigate("Login")} />
     </View>
   );

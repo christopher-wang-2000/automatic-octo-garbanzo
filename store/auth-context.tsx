@@ -14,6 +14,8 @@ export default function AuthContextProvider({ children }) {
     const [authToken, setAuthToken] = useState(null);
     const [userEmail, setUserEmail] = useState(null);
     const [userId, setUserId] = useState(null);
+    const [firstName, setFirstName] = useState(null);
+    const [lastName, setLastName] = useState(null);
 
     function authenticate(token: string|null, email: string, uid: string) {
         setAuthToken(token);

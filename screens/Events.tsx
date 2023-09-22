@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
-import { StyleSheet, Text, View, FlatList, RefreshControl } from 'react-native';
+import { Alert, StyleSheet, Text, View, FlatList, Modal, RefreshControl, Pressable, Button as TextButton } from 'react-native';
 import { Button } from 'react-native-elements';
-import { collection, query, where, getDocs, orderBy, doc, deleteDoc, updateDoc, Query, DocumentData, arrayUnion, arrayRemove } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, doc, deleteDoc, updateDoc, Query, DocumentData, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
 import { getCalendars } from 'expo-localization';
 
@@ -41,11 +41,15 @@ export default function EventsScreen({ navigation, ...props }) {
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [rsvpEvent, setRsvpEvent] = useState(undefined);
 
   const timezone: string | null = getCalendars()[0].timeZone;
+  const past = (props?.route?.params?.past === true);
+  const rsvpdOnly = (props?.route?.params?.rsvpdOnly === true);
 
   const myUid: string = authCtx.uid;
   const friendUidMap: Map<String, String> = new Map();
+  friendUidMap.set(myUid, authCtx.email);
   for (const friend of friendsCtx.friends) {
     friendUidMap.set(friend.uid, friend.email);
   }
@@ -64,7 +68,6 @@ export default function EventsScreen({ navigation, ...props }) {
         <MenuTrigger>
           <Text style={styles.eventTitle}>{event.title}</Text>
           {inProgress && <Text style={styles.eventStatus}>(IN PROGRESS)</Text>}
-          {ended && <Text style={styles.eventStatus}>(ENDED)</Text>}
 
           {oneDay && <Text style={styles.eventTime}>{event.startTime.toLocaleDateString() + ", " +
             event.startTime.toLocaleTimeString(undefined, { timeStyle: "short" })
@@ -77,10 +80,12 @@ export default function EventsScreen({ navigation, ...props }) {
           <Text style={styles.eventCreatedBy}>Created by {creator}</Text>
           {event.description && <Text style={styles.eventDescription}>{event.description}</Text>}
 
-          {!rsvpd && event.rsvps.length === 1 && <Text style={styles.eventRsvp}>1 person is coming</Text>}
-          {!rsvpd && event.rsvps.length > 1 && <Text style={styles.eventRsvp}>{event.rsvps.length} people are coming</Text>}
-          {rsvpd &&event.rsvps.length === 2 && <Text style={styles.eventRsvp}>You and {event.rsvps.length-1} other are coming</Text>}
-          {rsvpd &&event.rsvps.length !== 2 && <Text style={styles.eventRsvp}>You and {event.rsvps.length-1} others are coming</Text>}
+          <Pressable onPress={() => setRsvpEvent(event)}>
+            {!rsvpd && event.rsvps.length === 1 && <Text style={styles.eventRsvp}>1 person is coming</Text>}
+            {!rsvpd && event.rsvps.length > 1 && <Text style={styles.eventRsvp}>{event.rsvps.length} people are coming</Text>}
+            {rsvpd &&event.rsvps.length === 2 && <Text style={styles.eventRsvp}>You and {event.rsvps.length-1} other are coming</Text>}
+            {rsvpd &&event.rsvps.length !== 2 && <Text style={styles.eventRsvp}>You and {event.rsvps.length-1} others are coming</Text>}
+          </Pressable>
         </MenuTrigger>
         <MenuOptions>
           {isMyEvent && <MenuOption text="Update event" onSelect={() => { navigation.navigate("Create Event", { event }) }} />}
@@ -117,11 +122,12 @@ export default function EventsScreen({ navigation, ...props }) {
     const uidsToUse: Array<string> = (props?.route?.params?.uids) ? allUids.filter((uid) => props.route.params.uids.includes(uid)) : allUids;
 
     let q: Query<DocumentData, DocumentData>;
-    if (props?.route?.params?.rsvpdOnly) {
-      q = query(collection(db, "events"), where("rsvps", "array-contains", myUid));
+    const timeframe = where("endTime", past ? "<=" : ">", Timestamp.fromDate(new Date()));
+    if (rsvpdOnly) {
+      q = query(collection(db, "events"), where("rsvps", "array-contains", myUid), timeframe);
     }
     else {
-      q = query(collection(db, "events"), where("uid", "in", uidsToUse));
+      q = query(collection(db, "events"), where("uid", "in", uidsToUse), timeframe);
     }
     const querySnapshot = await getDocs(q);
     const events: Array<Event> = querySnapshot.docs.map(createEventFromDoc);
@@ -137,16 +143,40 @@ export default function EventsScreen({ navigation, ...props }) {
     loadEvents();
   }, []);
 
+  function rsvpOverlay() {
+    return (
+      <Modal
+      animationType="slide"
+      transparent={true}
+      visible={(rsvpEvent !== undefined)}
+      onRequestClose={() => {
+        setRsvpEvent(undefined);
+      }}>
+      <View style={{height: "40%", marginTop: "auto", backgroundColor: "#D3D3D3"}}>
+        <View style={{padding: 8}}>
+          <Button title={"Close"} onPress={() => setRsvpEvent(undefined)} />
+          <Text style={{fontSize: 16, fontWeight: "bold", marginTop: 5}}>RSVPs for {rsvpEvent?.title}:</Text>
+          <FlatList data={rsvpEvent?.rsvps} renderItem={rsvpUid => (
+            <Text>{friendUidMap.get(rsvpUid.item)}</Text>
+          )}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={() => { getEvents(); }} />
+          } />
+        </View>
+      </View>
+    </Modal>
+    )
+
+  }
+
   if (loading) {
     return <LoadingOverlay message="Loading events..." />
   }
 
-  console.log(eventsCtx.events);
-
   return (
     <View style={styles.rootContainer}>
       <Text style={styles.title}>{props?.route?.params?.title}</Text>
-      <Button style={styles.createEvent} title="Create new event" onPress={() => navigation.navigate("Create Event")} />
+      {!past && <Button style={styles.createEvent} title="Create new event" onPress={() => navigation.navigate("Create Event")} />}
       <Text>Timezone: {timezone}</Text>
       <Text>Scroll up to refresh</Text>
       <View style={styles.eventsContainer}>
@@ -156,6 +186,7 @@ export default function EventsScreen({ navigation, ...props }) {
             <RefreshControl refreshing={refreshing} onRefresh={() => { getEvents(); }} />
           } />
       </View>
+      {rsvpOverlay()}
     </View>
   );
 }
@@ -218,6 +249,8 @@ const styles = StyleSheet.create({
   },
   eventRsvp: {
     fontStyle: "italic",
-    marginTop: 5
+    marginTop: 5,
+    fontWeight: "bold",
+    color: "#001066"
   },
 });

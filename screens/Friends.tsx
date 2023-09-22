@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View, FlatList } from 'react-native';
+import { Alert, StyleSheet, Text, View, FlatList, RefreshControl } from 'react-native';
 import { Input, Button } from 'react-native-elements';
 import { collection, query, where, getDocs, orderBy, doc, addDoc, updateDoc, getDoc, deleteDoc, QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
@@ -11,7 +11,7 @@ import LoadingOverlay from './LoadingOverlay';
 
 export enum RequestStatus { Incoming, Accepted, Outgoing };
 
-export async function loadFriends(myUid: string) {
+export async function loadFriends(myUid: string): Promise<Friend[]> {
     const q = query(collection(db, "friends"), where("uids", "array-contains", myUid));
     const querySnapshot = await getDocs(q);
     const friends = await Promise.all(querySnapshot.docs.map((doc) => Friend.make(doc, myUid)));
@@ -84,6 +84,18 @@ export class Friend {
     get email() {
         return this.userData.email;
     }
+
+    get name() {
+        return this.userData.fullName;
+    }
+
+    get firstName() {
+        return this.userData.firstName;
+    }
+    
+    get lastName() {
+        return this.userData.lastName;
+    }
 }
 
 export default function MyFriendsScreen({ navigation }) {
@@ -93,6 +105,7 @@ export default function MyFriendsScreen({ navigation }) {
 
     const [loadingStatus, setLoadingStatus] = useState(false);
     const [addingStatus, setAddingStatus] = useState(false);
+    const [refreshing, setRefreshing] = useState(false);
     const [newFriendEmail, setNewFriendEmail] = useState("");
 
     async function addFriend() {
@@ -132,11 +145,17 @@ export default function MyFriendsScreen({ navigation }) {
         setAddingStatus(false);
     }
 
+    async function loadFriendsAndRefresh() {
+        setRefreshing(true);
+        const friends = await loadFriends(myUid);
+        friendsCtx.setFriends(friends);
+        setRefreshing(false);
+    }
+
     useEffect(() => {
         async function loadFriendsAndWait() {
             setLoadingStatus(true);
-            const friends = await loadFriends(myUid);
-            friendsCtx.setFriends(friends);
+            await loadFriendsAndRefresh();
             setLoadingStatus(false);
         }
         loadFriendsAndWait();
@@ -196,8 +215,11 @@ export default function MyFriendsScreen({ navigation }) {
                 <Input placeholder="Enter email here" onChangeText={setNewFriendEmail} />
                 <Button title="Add friend" onPress={addFriend} />
             </View>
+            <Text>Scroll up to refresh</Text>
             <View style={styles.friendsContainer}>
-                <FlatList data={friendsCtx.friends} renderItem={itemData => renderFriend(itemData.item)} />
+                <FlatList data={friendsCtx.friends} renderItem={itemData => renderFriend(itemData.item)}
+                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { loadFriendsAndRefresh(); }} />}
+                    />
             </View>
         </View>
     );
@@ -217,7 +239,6 @@ const styles = StyleSheet.create({
         marginBottom: 8,
     },
     addFriend: {
-        marginBottom: 10,
         flexDirection: "row",
         width: "80%",
         justifyContent: "center"

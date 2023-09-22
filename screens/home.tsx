@@ -13,6 +13,7 @@ function WelcomeScreen({ navigation }) {
             <Text style={styles.title}>Welcome {authCtx.email}!</Text>
             <Button style={styles.button} title="Browse upcoming events" onPress={() => navigation.navigate("Events", { title: "Upcoming events" })}></Button>
             <Button style={styles.button} title="My RSVP'd events" onPress={() => navigation.navigate("Events", { title: "My RSVP'd events", rsvpdOnly: true })}></Button>
+            <Button style={styles.button} title="Past events" onPress={() => navigation.navigate("Events", { title: "Past events", past: true })}></Button>
             <Button style={styles.button} title="My friends list" onPress={() => navigation.navigate("My Friends")}></Button>
         </View>
     );
