@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View, FlatList, Modal, RefreshControl, Pressable, Button as TextButton } from 'react-native';
+import { Alert, StyleSheet, Text, View, FlatList, Modal, RefreshControl, Pressable } from 'react-native';
 import { Button } from 'react-native-elements';
 import { collection, query, where, getDocs, orderBy, doc, deleteDoc, updateDoc, Query, DocumentData, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
@@ -89,8 +89,8 @@ export default function EventsScreen({ navigation, ...props }) {
         <MenuOptions>
           {isMyEvent && <MenuOption text="Update event" onSelect={() => { navigation.navigate("Create Event", { event }) }} />}
           {isMyEvent && <MenuOption text="Delete event" onSelect={() => deleteEvent(event)} />}
-          {!rsvpd && !ended && <MenuOption text="RSVP" onSelect={() => rsvp(event)}/>}
-          {rsvpd && !ended && <MenuOption text="Cancel RSVP" onSelect={() => unrsvp(event)}/>}
+          {!rsvpd && !ended && <MenuOption text="I'm coming!" onSelect={() => rsvp(event)}/>}
+          {rsvpd && !ended && <MenuOption text="I'm no longer coming" onSelect={() => unrsvp(event)}/>}
         </MenuOptions>
       </Menu>
     );
@@ -114,9 +114,7 @@ export default function EventsScreen({ navigation, ...props }) {
 
   async function getEvents() {
     setRefreshing(true);
-    const friends = await loadFriends(myUid);
-    await Promise.all(friends.map((friend: Friend) => usersCtx.loadUserAsync(friend.uid)));
-    friendsCtx.setFriends(friends);
+    const friends = await loadFriends(myUid, usersCtx, friendsCtx);
 
     const friendUids: Array<string> = friends.map((friend: Friend) => friend.uid);
     const allUids: Array<string> = [myUid, ...friendUids];
@@ -161,7 +159,7 @@ export default function EventsScreen({ navigation, ...props }) {
       <View style={{height: "40%", marginTop: "auto", backgroundColor: "#D3D3D3"}}>
         <View style={{padding: 8}}>
           <Button title={"Close"} onPress={() => setRsvpEvent(undefined)} />
-          <Text style={{fontSize: 18, fontWeight: "bold", marginTop: 5, marginBottom: 5}}>RSVPs for {rsvpEvent?.title}:</Text>
+          <Text style={{fontSize: 18, fontWeight: "bold", marginTop: 5, marginBottom: 5}}>Who's coming to {rsvpEvent?.title}:</Text>
           <FlatList data={rsvpEvent?.rsvps} renderItem={rsvpUid => (
             <Text style={{fontSize: 16, marginBottom: 2}}>{usersCtx.getUser(rsvpUid.item).fullName}</Text>
           )}

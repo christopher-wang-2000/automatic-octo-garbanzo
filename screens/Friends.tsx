@@ -42,9 +42,7 @@ export default function MyFriendsScreen({ navigation }) {
                 const duplicateFriend: Friend|undefined = friendsCtx.friends.find(
                     (friend: Friend) => (friend.uid === newFriendUid));
                 if (duplicateFriend === undefined) {
-                    const newFriend = await sendFriendRequest(myUid, newFriendUid);
-                    await usersCtx.loadUserAsync(newFriendUid);
-                    friendsCtx.addFriend(newFriend);
+                    const newFriend = await sendFriendRequest(myUid, newFriendUid, usersCtx, friendsCtx);
                     setNewFriendEmail("");
                     Alert.alert("Friend request sent!");
                 }
@@ -65,8 +63,7 @@ export default function MyFriendsScreen({ navigation }) {
     }
 
     async function accept(friend: Friend) {
-        await acceptFriendRequest(friend);
-        friendsCtx.updateFriend(friend);
+        await acceptFriendRequest(friend, friendsCtx);
         Alert.alert("Friend request accepted!");
     }
 
@@ -78,9 +75,7 @@ export default function MyFriendsScreen({ navigation }) {
 
     async function loadFriendsAndRefresh() {
         setRefreshing(true);
-        const friends: Array<Friend> = await loadFriends(myUid);
-        await Promise.all(friends.map((friend: Friend) => usersCtx.loadUserAsync(friend.uid)));
-        friendsCtx.setFriends(friends);
+        const friends: Array<Friend> = await loadFriends(myUid, usersCtx, friendsCtx);
         setRefreshing(false);
     }
 
