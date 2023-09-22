@@ -3,7 +3,7 @@ import { db } from '../firebase';
 
 export class User {
 
-    public constructor(public userDoc: DocumentData) {}
+    private constructor(public userDoc: DocumentData) {}
 
     static async make(uid: string): Promise<User> {
         const q = query(collection(db, "users"), where("uid", "==", uid));
@@ -20,11 +20,11 @@ export class User {
     get email(): string {
         return this.userDoc.email;
     }
-    get name(): string {
-        return this.userDoc.name;
+    get fullName(): string {
+        return this.userDoc.fullName;
     }
     get firstName(): string {
-        return this.userDoc.firstName;
+        return this.userDoc.lastName;
     }
     get lastName(): string {
         return this.userDoc.lastName;

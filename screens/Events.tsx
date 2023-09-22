@@ -8,8 +8,11 @@ import { getCalendars } from 'expo-localization';
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
 import { EventsContext } from '../store/events-context';
+import { UsersContext } from '../store/users-context';
 import { FriendsContext } from '../store/friends-context';
-import { Friend, loadFriends } from './Friends';
+
+import { User } from '../utils/user';
+import { Friend, loadFriends } from '../utils/friend';
 import LoadingOverlay from './LoadingOverlay';
 
 export type Event = {
@@ -37,6 +40,7 @@ export function createEventFromDoc(document: DocumentData) {
 export default function EventsScreen({ navigation, ...props }) {
   const authCtx = useContext(AuthContext);
   const eventsCtx = useContext(EventsContext);
+  const usersCtx = useContext(UsersContext);
   const friendsCtx = useContext(FriendsContext);
 
   const [loading, setLoading] = useState(false);
@@ -48,16 +52,11 @@ export default function EventsScreen({ navigation, ...props }) {
   const rsvpdOnly = (props?.route?.params?.rsvpdOnly === true);
 
   const myUid: string = authCtx.uid;
-  const friendUidMap: Map<String, String> = new Map();
-  friendUidMap.set(myUid, authCtx.email);
-  for (const friend of friendsCtx.friends) {
-    friendUidMap.set(friend.uid, friend.email);
-  }
 
   function renderEvent(event: Event) {
-    const isMyEvent = (event.creatorUid === myUid)
-    const creator = isMyEvent ? "you" : friendUidMap.get(event.creatorUid);
-    const oneDay = (event.startTime.toLocaleDateString() === event.endTime.toLocaleDateString())
+    const isMyEvent = (event.creatorUid === myUid);
+    const creator = isMyEvent ? "you" : usersCtx.getUser(event.creatorUid).fullName;
+    const oneDay = (event.startTime.toLocaleDateString() === event.endTime.toLocaleDateString());
     const currentTime = new Date().getTime();
     const inProgress = (currentTime >= event.startTime.getTime()) && (currentTime < event.endTime.getTime());
     const ended = (currentTime >= event.endTime.getTime());
@@ -80,7 +79,7 @@ export default function EventsScreen({ navigation, ...props }) {
           <Text style={styles.eventCreatedBy}>Created by {creator}</Text>
           {event.description && <Text style={styles.eventDescription}>{event.description}</Text>}
 
-          <Pressable onPress={() => setRsvpEvent(event)}>
+          <Pressable onPress={() => { activateRsvpOverlay(event); }}>
             {!rsvpd && event.rsvps.length === 1 && <Text style={styles.eventRsvp}>1 person is coming</Text>}
             {!rsvpd && event.rsvps.length > 1 && <Text style={styles.eventRsvp}>{event.rsvps.length} people are coming</Text>}
             {rsvpd &&event.rsvps.length === 2 && <Text style={styles.eventRsvp}>You and {event.rsvps.length-1} other are coming</Text>}
@@ -116,7 +115,9 @@ export default function EventsScreen({ navigation, ...props }) {
   async function getEvents() {
     setRefreshing(true);
     const friends = await loadFriends(myUid);
+    await Promise.all(friends.map((friend: Friend) => usersCtx.loadUserAsync(friend.uid)));
     friendsCtx.setFriends(friends);
+
     const friendUids: Array<string> = friends.map((friend: Friend) => friend.uid);
     const allUids: Array<string> = [myUid, ...friendUids];
     const uidsToUse: Array<string> = (props?.route?.params?.uids) ? allUids.filter((uid) => props.route.params.uids.includes(uid)) : allUids;
@@ -143,6 +144,11 @@ export default function EventsScreen({ navigation, ...props }) {
     loadEvents();
   }, []);
 
+  async function activateRsvpOverlay(event: Event) {
+    await Promise.all(event.rsvps.map((uid) => usersCtx.loadUserAsync(uid)));
+    setRsvpEvent(event);
+  }
+
   function rsvpOverlay() {
     return (
       <Modal
@@ -155,9 +161,9 @@ export default function EventsScreen({ navigation, ...props }) {
       <View style={{height: "40%", marginTop: "auto", backgroundColor: "#D3D3D3"}}>
         <View style={{padding: 8}}>
           <Button title={"Close"} onPress={() => setRsvpEvent(undefined)} />
-          <Text style={{fontSize: 16, fontWeight: "bold", marginTop: 5}}>RSVPs for {rsvpEvent?.title}:</Text>
+          <Text style={{fontSize: 18, fontWeight: "bold", marginTop: 5, marginBottom: 5}}>RSVPs for {rsvpEvent?.title}:</Text>
           <FlatList data={rsvpEvent?.rsvps} renderItem={rsvpUid => (
-            <Text>{friendUidMap.get(rsvpUid.item)}</Text>
+            <Text style={{fontSize: 16, marginBottom: 2}}>{usersCtx.getUser(rsvpUid.item).fullName}</Text>
           )}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => { getEvents(); }} />
@@ -166,7 +172,6 @@ export default function EventsScreen({ navigation, ...props }) {
       </View>
     </Modal>
     )
-
   }
 
   if (loading) {

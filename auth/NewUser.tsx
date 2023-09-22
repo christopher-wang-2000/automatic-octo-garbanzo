@@ -54,7 +54,7 @@ export default function Register({ navigation }) {
         await setDoc(doc(db, "users", uid),
           { uid, email, firstName, lastName, fullName: firstName + " " + lastName });
         setIsAuthenticating(false);
-        authCtx.authenticate(token, email, uid, firstName, lastName);
+        authCtx.authenticate(token, email, uid);
       }
       catch (error) {
         console.log(error.response);

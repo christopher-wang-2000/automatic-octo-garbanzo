@@ -6,100 +6,16 @@ import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-m
 
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
+import { UsersContext } from '../store/users-context';
 import { FriendsContext } from '../store/friends-context';
 import LoadingOverlay from './LoadingOverlay';
+import { User } from '../utils/user';
+import { FriendStatus, Friend, sendFriendRequest, acceptFriendRequest, removeFriend, loadFriends } from '../utils/friend';
 
-export enum RequestStatus { Incoming, Accepted, Outgoing };
-
-export async function loadFriends(myUid: string): Promise<Friend[]> {
-    const q = query(collection(db, "friends"), where("uids", "array-contains", myUid));
-    const querySnapshot = await getDocs(q);
-    const friends = await Promise.all(querySnapshot.docs.map((doc) => Friend.make(doc, myUid)));
-    return friends;
-}
-
-export class Friend {
-    public constructor(
-        public readonly userData: DocumentData,
-        public readonly friendshipDocId: string,
-        public status: RequestStatus) { }
-
-    static async make(friendshipDoc: QueryDocumentSnapshot<DocumentData, DocumentData>, myUid: string) {
-        // get uid of friend from friendship document
-        const data = friendshipDoc.data();
-        const uidPair = data.uids;
-        if (uidPair.length !== 2) {
-            console.error("Unexpected format of friendship document");
-            return null;
-        }
-
-        let status = RequestStatus.Accepted;
-        let friendUid: string = "";
-        if (uidPair[0] === myUid && uidPair[1] !== myUid) {
-            friendUid = uidPair[1];
-            status = data.accepted ? RequestStatus.Accepted : RequestStatus.Outgoing;
-        }
-        else if (uidPair[0] !== myUid && uidPair[1] === myUid) {
-            friendUid = uidPair[0];
-            status = data.accepted ? RequestStatus.Accepted : RequestStatus.Incoming;
-        }
-        else {
-            console.error("Unexpected format of friendship document");
-            return null;
-        }
-
-        // get user doc of friend
-        const snapshot = await getDocs(query(collection(db, "users"), where("uid", "==", friendUid)));
-        const docs = snapshot.docs;
-        if (docs.length === 0) {
-            console.error(`No user document found associated with uid ${friendUid}`);
-        }
-        else if (docs.length > 1) {
-            console.error(`Multiple user documents found associated with uid ${friendUid}`);
-        }
-        else {
-            return new Friend(docs[0].data(), friendshipDoc.id, status);
-        }
-    }
-
-    static async create(friendData: DocumentData, fromUid: string, toUid: string) {
-        const docRef = await addDoc(collection(db, "friends"), { accepted: false, uids: [fromUid, toUid] });
-        return new Friend(friendData, docRef.id, RequestStatus.Outgoing);
-    }
-
-    async remove() {
-        await deleteDoc(doc(db, "friends", this.friendshipDocId));
-    }
-
-    async accept() {
-        await updateDoc(doc(db, "friends", this.friendshipDocId), { accepted: true } );
-        this.status = RequestStatus.Accepted;
-        return this;
-    }
-
-    get uid() {
-        return this.userData.uid;
-    }
-
-    get email() {
-        return this.userData.email;
-    }
-
-    get name() {
-        return this.userData.fullName;
-    }
-
-    get firstName() {
-        return this.userData.firstName;
-    }
-    
-    get lastName() {
-        return this.userData.lastName;
-    }
-}
 
 export default function MyFriendsScreen({ navigation }) {
     const authCtx = useContext(AuthContext);
+    const usersCtx = useContext(UsersContext);
     const friendsCtx = useContext(FriendsContext);
     const myUid = authCtx.uid;
 
@@ -108,7 +24,7 @@ export default function MyFriendsScreen({ navigation }) {
     const [refreshing, setRefreshing] = useState(false);
     const [newFriendEmail, setNewFriendEmail] = useState("");
 
-    async function addFriend() {
+    async function add() {
         setAddingStatus(true);
         const friendEmail = newFriendEmail.trim().toLowerCase();
         const querySnapshot = await getDocs(query(collection(db, "users"), where("email", "==", friendEmail)));
@@ -123,21 +39,24 @@ export default function MyFriendsScreen({ navigation }) {
             }
             else {
                 // see if user already exists as friend
-                const duplicateFriend: Friend|undefined = friendsCtx.friends.find((friend) => (friend.uid === newFriendUid));
+                const duplicateFriend: Friend|undefined = friendsCtx.friends.find(
+                    (friend: Friend) => (friend.uid === newFriendUid));
                 if (duplicateFriend === undefined) {
-                    friendsCtx.addFriend(await Friend.create(friendData, myUid, newFriendUid));
+                    const newFriend = await sendFriendRequest(myUid, newFriendUid);
+                    await usersCtx.loadUserAsync(newFriendUid);
+                    friendsCtx.addFriend(newFriend);
                     setNewFriendEmail("");
                     Alert.alert("Friend request sent!");
                 }
                 else {
-                    if (duplicateFriend.status === RequestStatus.Accepted) {
+                    if (duplicateFriend.status === FriendStatus.Accepted) {
                         Alert.alert("This user is already your friend!");
                     }
-                    else if (duplicateFriend.status === RequestStatus.Incoming) {
-                        acceptRequest(duplicateFriend);
-                    }
-                    else if (duplicateFriend.status === RequestStatus.Outgoing) {
+                    else if (duplicateFriend.status === FriendStatus.Outgoing) {
                         Alert.alert("You already have a pending outgoing friend request to this user.")
+                    }
+                    else if (duplicateFriend.status === FriendStatus.Incoming) {
+                        accept(duplicateFriend);
                     }
                 }
             }
@@ -145,9 +64,22 @@ export default function MyFriendsScreen({ navigation }) {
         setAddingStatus(false);
     }
 
+    async function accept(friend: Friend) {
+        await acceptFriendRequest(friend);
+        friendsCtx.updateFriend(friend);
+        Alert.alert("Friend request accepted!");
+    }
+
+    async function remove(friend: Friend, message: string) {
+        await removeFriend(friend);
+        friendsCtx.removeFriend(friend);
+        Alert.alert(message);
+    }
+
     async function loadFriendsAndRefresh() {
         setRefreshing(true);
-        const friends = await loadFriends(myUid);
+        const friends: Array<Friend> = await loadFriends(myUid);
+        await Promise.all(friends.map((friend: Friend) => usersCtx.loadUserAsync(friend.uid)));
         friendsCtx.setFriends(friends);
         setRefreshing(false);
     }
@@ -161,41 +93,31 @@ export default function MyFriendsScreen({ navigation }) {
         loadFriendsAndWait();
     }, []);
 
-    async function removeFriend(friend: Friend, message: string) {
-        friend.remove();
-        friendsCtx.deleteFriend(friend);
-        Alert.alert(message)
-    }
-
-    async function acceptRequest(friend: Friend) {
-        await friend.accept();
-        friendsCtx.updateFriend(friend);
-        Alert.alert("Friend request accepted!");
-    }
-
     function renderFriend(friend: Friend) {
-        function getLabelAndStyle(status: RequestStatus) {
+        function getLabelAndStyle(status: FriendStatus) {
             switch (status) {
-                case RequestStatus.Accepted:
+                case FriendStatus.Accepted:
                     return { label: "Friend", style: styles.accepted }
-                case RequestStatus.Outgoing:
+                case FriendStatus.Outgoing:
                     return { label: "Request pending", style: styles.outgoing }
-                case RequestStatus.Incoming:
+                case FriendStatus.Incoming:
                     return { label: "Incoming friend request", style: styles.incoming }
             }
         }
         const { label, style } = getLabelAndStyle(friend.status);
+        const user: User = usersCtx.getUser(friend.uid);
         return (
-            <Menu key={friend.friendshipDocId} style={style}>
+            <Menu key={friend.docId} style={style}>
                 <MenuTrigger>
-                    <Text style={styles.friendName}>{friend.userData.email}</Text>
-                    <Text style={styles.friendStatus}>{label}</Text>
+                    <Text style={{fontWeight: "bold"}}>{user?.fullName}</Text>
+                    <Text style={{}}>{user?.email}</Text>
+                    <Text style={{fontStyle: "italic"}}>{label}</Text>
                 </MenuTrigger>
                 <MenuOptions>
-                    { (friend.status === RequestStatus.Accepted) && <MenuOption text="Remove friend" onSelect={() => { removeFriend(friend, "Friend successfully removed."); }} /> }
-                    { (friend.status === RequestStatus.Outgoing) && <MenuOption text="Cancel request" onSelect={() => { removeFriend(friend, "Friend request canceled."); }} />  }
-                    { (friend.status === RequestStatus.Incoming) && <MenuOption text="Accept request" onSelect={() => { acceptRequest(friend); }} />  }
-                    { (friend.status === RequestStatus.Incoming) && <MenuOption text="Delete request" onSelect={() => { removeFriend(friend, "Friend request deleted."); }} />  }
+                    { (friend.status === FriendStatus.Accepted) && <MenuOption text="Remove friend" onSelect={() => { remove(friend, "Friend successfully removed."); }} /> }
+                    { (friend.status === FriendStatus.Outgoing) && <MenuOption text="Cancel request" onSelect={() => { remove(friend, "Friend request canceled."); }} />  }
+                    { (friend.status === FriendStatus.Incoming) && <MenuOption text="Accept request" onSelect={() => { accept(friend); }} />  }
+                    { (friend.status === FriendStatus.Incoming) && <MenuOption text="Delete request" onSelect={() => { remove(friend, "Friend request deleted."); }} />  }
                 </MenuOptions>
             </Menu>
         );
@@ -213,7 +135,7 @@ export default function MyFriendsScreen({ navigation }) {
             <Text style={styles.title}>My Friends</Text>
             <View style={styles.addFriend}>
                 <Input placeholder="Enter email here" onChangeText={setNewFriendEmail} />
-                <Button title="Add friend" onPress={addFriend} />
+                <Button title="Add friend" onPress={add} />
             </View>
             <Text>Scroll up to refresh</Text>
             <View style={styles.friendsContainer}>
@@ -268,10 +190,4 @@ const styles = StyleSheet.create({
         backgroundColor: "orange",
         borderRadius: 15
     },
-    friendName: {
-        fontWeight: "bold",
-    },
-    friendStatus: {
-        fontStyle: "italic",
-    }
 });
