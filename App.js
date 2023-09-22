@@ -14,8 +14,6 @@ import Register from './auth/NewUser';
 import AuthContextProvider from './store/auth-context'
 import EventsContextProvider from './store/events-context';
 import UsersContextProvider from './store/users-context';
-import FriendsContextProvider from './store/friends-context';
-import GroupsContextProvider from './store/groups-context';
 import { AuthContext } from './store/auth-context';
 
 import WelcomeScreen from './screens/Home';
@@ -84,28 +82,24 @@ function AuthStack() {
 function AuthenticatedStack() {
   const authCtx = useContext(AuthContext);
   return (
-    <EventsContextProvider>
-      <UsersContextProvider>
-        <FriendsContextProvider>
-          <GroupsContextProvider>
-            <Stack.Navigator
-              screenOptions={{
-                headerStyle: { },
-                contentStyle: { },
-              }}
-            >
-              <Stack.Screen name="Welcome" component={WelcomeScreen} options={{
-                headerRight: () => <TextButton title="Log out" onPress={authCtx.logout} />}} />
-              <Stack.Screen name="Events" component={EventsScreen} />
-              <Stack.Screen name="Create Event" component={CreateEventScreen} />
-              <Stack.Screen name="My Friends" component={MyFriendsScreen} />
-              <Stack.Screen name="My Groups" component={MyGroupsScreen} />
-              <Stack.Screen name="Create Group" component={CreateGroupScreen} />
-            </Stack.Navigator>
-          </GroupsContextProvider>
-        </FriendsContextProvider>
-      </UsersContextProvider>
-    </EventsContextProvider>
+    <UsersContextProvider>
+      <EventsContextProvider>
+        <Stack.Navigator
+          screenOptions={{
+            headerStyle: { },
+            contentStyle: { },
+          }}
+        >
+          <Stack.Screen name="Welcome" component={WelcomeScreen} options={{
+            headerRight: () => <TextButton title="Log out" onPress={authCtx.logout} />}} />
+          <Stack.Screen name="Events" component={EventsScreen} />
+          <Stack.Screen name="Create Event" component={CreateEventScreen} />
+          <Stack.Screen name="My Friends" component={MyFriendsScreen} />
+          <Stack.Screen name="My Groups" component={MyGroupsScreen} />
+          <Stack.Screen name="Create Group" component={CreateGroupScreen} />
+        </Stack.Navigator>
+      </EventsContextProvider>
+    </UsersContextProvider>
   );
 }
 

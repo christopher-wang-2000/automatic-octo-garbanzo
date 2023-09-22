@@ -7,16 +7,15 @@ import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-m
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
 import { UsersContext } from '../store/users-context';
-import { FriendsContext } from '../store/friends-context';
 import LoadingOverlay from './LoadingOverlay';
+
 import { User } from '../utils/user';
-import { FriendStatus, Friend, sendFriendRequest, acceptFriendRequest, removeFriend, loadFriends } from '../utils/friend';
+import { FriendStatus, Friend } from '../utils/friend';
 
 
 export default function MyFriendsScreen({ navigation }) {
     const authCtx = useContext(AuthContext);
     const usersCtx = useContext(UsersContext);
-    const friendsCtx = useContext(FriendsContext);
     const myUid = authCtx.uid;
 
     const [loadingStatus, setLoadingStatus] = useState(false);
@@ -39,10 +38,10 @@ export default function MyFriendsScreen({ navigation }) {
             }
             else {
                 // see if user already exists as friend
-                const duplicateFriend: Friend|undefined = friendsCtx.friends.find(
+                const duplicateFriend: Friend|undefined = usersCtx.friends.find(
                     (friend: Friend) => (friend.uid === newFriendUid));
                 if (duplicateFriend === undefined) {
-                    const newFriend = await sendFriendRequest(myUid, newFriendUid, usersCtx, friendsCtx);
+                    const newFriend = await usersCtx.sendFriendRequest(myUid, newFriendUid);
                     setNewFriendEmail("");
                     Alert.alert("Friend request sent!");
                 }
@@ -54,7 +53,7 @@ export default function MyFriendsScreen({ navigation }) {
                         Alert.alert("You already have a pending outgoing friend request to this user.")
                     }
                     else if (duplicateFriend.status === FriendStatus.Incoming) {
-                        accept(duplicateFriend);
+                        await usersCtx.acceptFriendRequest(duplicateFriend);
                     }
                 }
             }
@@ -63,19 +62,18 @@ export default function MyFriendsScreen({ navigation }) {
     }
 
     async function accept(friend: Friend) {
-        await acceptFriendRequest(friend, friendsCtx);
+        await usersCtx.acceptFriendRequest(friend);
         Alert.alert("Friend request accepted!");
     }
 
     async function remove(friend: Friend, message: string) {
-        await removeFriend(friend);
-        friendsCtx.removeFriend(friend);
+        await usersCtx.removeFriend(friend);
         Alert.alert(message);
     }
 
     async function loadFriendsAndRefresh() {
         setRefreshing(true);
-        const friends: Array<Friend> = await loadFriends(myUid, usersCtx, friendsCtx);
+        await usersCtx.loadFriends(myUid);
         setRefreshing(false);
     }
 
@@ -134,7 +132,7 @@ export default function MyFriendsScreen({ navigation }) {
             </View>
             <Text>Scroll up to refresh</Text>
             <View style={styles.friendsContainer}>
-                <FlatList data={friendsCtx.friends} renderItem={itemData => renderFriend(itemData.item)}
+                <FlatList data={usersCtx.friends} renderItem={itemData => renderFriend(itemData.item)}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { loadFriendsAndRefresh(); }} />}
                     />
             </View>

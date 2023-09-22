@@ -9,28 +9,24 @@ import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
 import { EventsContext } from '../store/events-context';
 import { UsersContext } from '../store/users-context';
-import { FriendsContext } from '../store/friends-context';
-import { GroupsContext } from '../store/groups-context';
 import LoadingOverlay from './LoadingOverlay';
 
-import { Friend, FriendStatus, getFriendName } from '../utils/friend';
-import { createGroup } from '../utils/group';
+import { Friend, FriendStatus } from '../utils/friend';
+import { Group } from '../utils/group';
 
 export default function CreateGroupScreen({ navigation }) {
     const authCtx = useContext(AuthContext);
     const usersCtx = useContext(UsersContext);
-    const friendsCtx = useContext(FriendsContext);
-    const groupsCtx = useContext(GroupsContext);
     const myUid: string = authCtx.uid;
 
     const [title, setTitle] = useState("");
     const [loadingMessage, setLoadingMessage] = useState("");
     const [friendsInGroup, setFriendsInGroup] = useState([]);
 
-    function renderFriend(friend: Friend) {
+    function renderFriendSelect(friend: Friend) {
         return (
-            <View style={{flexDirection: "row", backgroundColor: "white", borderRadius: 20, margin: 5, alignItems: "center" }}>
-                <Text style={{flex: 1, marginLeft: 15, fontSize: 16}}>{getFriendName(friend, usersCtx)}</Text>
+            <View id={friend.docId} style={{flexDirection: "row", backgroundColor: "white", borderRadius: 20, margin: 5, alignItems: "center" }}>
+                <Text style={{flex: 1, marginLeft: 15, fontSize: 16}}>{usersCtx.getUser(friend.uid).fullName}</Text>
                 <RoundedCheckbox innerStyle={{height: "60%", width: "60%"}} text={""} uncheckedColor={"lightgray"} onPress={(checked) => {
                     if (checked) {
                         setFriendsInGroup([...friendsInGroup, friend]);
@@ -44,12 +40,18 @@ export default function CreateGroupScreen({ navigation }) {
 
     async function create() {
         setLoadingMessage("Creating group...")
+        if (!title) {
+            Alert.alert("Must enter a group name!");
+            setLoadingMessage("");
+            return;
+        }
         if (friendsInGroup.length === 0) {
-            Alert.alert("Must add friends to this group!");
+            Alert.alert("Must add others to this group!");
+            setLoadingMessage("");
             return;
         }
         const anyoneCanEdit = true;
-        await createGroup(myUid, friendsInGroup, title, anyoneCanEdit, groupsCtx);
+        await usersCtx.createGroup(myUid, friendsInGroup, title, anyoneCanEdit);
         setLoadingMessage("");
         navigation.navigate("My Groups");
     }
@@ -60,10 +62,10 @@ export default function CreateGroupScreen({ navigation }) {
     return (
         <View style={styles.rootContainer}>
             <Input placeholder="Group name" defaultValue={title} onChangeText={setTitle} />
-            <Button title="Create" onPress={create} />
+            <Button title="Create" style={{marginBottom: 15}} onPress={create} />
             <Text style={{fontSize: 18, fontWeight: "bold"}}>Add friends:</Text>
             <View style={styles.friendsContainer}>
-                <FlatList data={friendsCtx.friends} renderItem={itemData => renderFriend(itemData.item)} />
+                <FlatList data={usersCtx.friends} renderItem={itemData => renderFriendSelect(itemData.item)} />
             </View>
         </View>
     );

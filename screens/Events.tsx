@@ -9,11 +9,15 @@ import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
 import { EventsContext } from '../store/events-context';
 import { UsersContext } from '../store/users-context';
-import { FriendsContext } from '../store/friends-context';
 
 import { User } from '../utils/user';
-import { Friend, loadFriends } from '../utils/friend';
+import { Friend } from '../utils/friend';
+import { Group } from '../utils/group';
 import LoadingOverlay from './LoadingOverlay';
+
+import { Logs } from 'expo'
+
+Logs.enableExpoCliLogging()
 
 export type Event = {
   docId: string,
@@ -22,6 +26,8 @@ export type Event = {
   endTime: Date,
   description: string,
   creatorUid: string,
+  friendsCanSee: boolean,
+  invitedGroups: Array<Group>
   rsvps: Array<string>
 }
 
@@ -33,6 +39,8 @@ export function createEventFromDoc(document: DocumentData) {
             endTime: data.endTime.toDate(),
             description: data.description,
             creatorUid: data.uid,
+            friendsCanSee: data.friendsCanSee,
+            invitedGroups: data.invitedGroups,
             rsvps: data.rsvps
           };
 }
@@ -41,7 +49,6 @@ export default function EventsScreen({ navigation, ...props }) {
   const authCtx = useContext(AuthContext);
   const eventsCtx = useContext(EventsContext);
   const usersCtx = useContext(UsersContext);
-  const friendsCtx = useContext(FriendsContext);
 
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -114,36 +121,51 @@ export default function EventsScreen({ navigation, ...props }) {
 
   async function getEvents() {
     setRefreshing(true);
-    const friends = await loadFriends(myUid, usersCtx, friendsCtx);
+    const friends = await usersCtx.loadFriends(myUid);
+    const groups = await usersCtx.loadGroups(myUid);
 
     const friendUids: Array<string> = friends.map((friend: Friend) => friend.uid);
     const allUids: Array<string> = [myUid, ...friendUids];
     const uidsToUse: Array<string> = (props?.route?.params?.uids) ? allUids.filter((uid) => props.route.params.uids.includes(uid)) : allUids;
 
-    let q: Query<DocumentData, DocumentData>;
+    let events: Array<Event>;
     const timeframe = where("endTime", past ? "<=" : ">", Timestamp.fromDate(new Date()));
     if (rsvpdOnly) {
-      q = query(collection(db, "events"), where("rsvps", "array-contains", myUid), timeframe);
+      const q = query(collection(db, "events"), where("rsvps", "array-contains", myUid), timeframe);
+      const querySnapshot = await getDocs(q);
+      events = querySnapshot.docs.map(createEventFromDoc);
     }
     else {
-      q = query(collection(db, "events"), where("uid", "in", uidsToUse), timeframe);
+      const myEventsQuery = query(collection(db, "events"), where("uid", "==", myUid), timeframe);
+      let snapshotPromises = [getDocs(myEventsQuery)];
+      if (friends.length > 0) {
+        const friendQuery = query(collection(db, "events"), where("friendsCanSee", "==", true), where("uid", "in", friends.map((f: Friend) => f.uid)), timeframe);
+        snapshotPromises.push(getDocs(friendQuery));
+      }
+      if (groups.length > 0) {
+        const groupQuery = query(collection(db, "events"), where("invitedGroups", "array-contains-any", groups.map((g: Group) => g.docId)), timeframe);
+        snapshotPromises.push(getDocs(groupQuery));
+      }
+      const snapshots = await Promise.all(snapshotPromises);
+      events = snapshots.flatMap((s) => s.docs).map(createEventFromDoc);
+      events = [...new Map(events.map((e) => [e.docId, e])).values()] // remove duplicates
     }
-    const querySnapshot = await getDocs(q);
-    const events: Array<Event> = querySnapshot.docs.map(createEventFromDoc);
     eventsCtx.setEvents(events);
+    await Promise.all(events.map((e: Event) => usersCtx.loadUser(e.creatorUid)));
     setRefreshing(false);
   }
+
   useEffect(() => {
-    async function loadEvents() {
+    async function load() {
       setLoading(true);
       await getEvents();
       setLoading(false);
     }
-    loadEvents();
+    load();
   }, []);
 
   async function activateRsvpOverlay(event: Event) {
-    await Promise.all(event.rsvps.map((uid) => usersCtx.loadUserAsync(uid)));
+    await Promise.all(event.rsvps.map(usersCtx.loadUser));
     setRsvpEvent(event);
   }
 

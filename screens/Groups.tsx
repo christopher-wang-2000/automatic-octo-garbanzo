@@ -7,19 +7,15 @@ import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-m
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
 import { UsersContext } from '../store/users-context';
-import { FriendsContext } from '../store/friends-context';
-import { GroupsContext } from '../store/groups-context';
 
 import LoadingOverlay from './LoadingOverlay';
 import { User } from '../utils/user';
-import { FriendStatus, Friend, sendFriendRequest, acceptFriendRequest, removeFriend, loadFriends } from '../utils/friend';
-import { Group, loadGroups } from '../utils/group';
+import { FriendStatus, Friend } from '../utils/friend';
+import { Group } from '../utils/group';
 
 export default function MyGroupsScreen({ navigation }) {
     const authCtx = useContext(AuthContext);
     const usersCtx = useContext(UsersContext);
-    const friendsCtx = useContext(FriendsContext);
-    const groupsCtx = useContext(GroupsContext);
     const myUid = authCtx.uid;
 
     const [loadingMessage, setLoadingMessage] = useState("");
@@ -27,8 +23,7 @@ export default function MyGroupsScreen({ navigation }) {
 
     async function refreshGroups() {
         setRefreshing(true);
-        await loadFriends(myUid, usersCtx, friendsCtx);
-        await loadGroups(myUid, usersCtx, groupsCtx);
+        await usersCtx.loadGroups(myUid);
         setRefreshing(false);
     }
 
@@ -49,10 +44,9 @@ export default function MyGroupsScreen({ navigation }) {
                     <Text style={{fontWeight: "bold"}}>{group.title}</Text>
                     <Text style={{fontStyle: "italic", marginBottom: 5}}>{group.members.length} members</Text>
                     {group.members.map((uid) => {
-                        console.log(usersCtx.users);
                         const user: User = usersCtx.getUser(uid);
                         return (
-                            <Text>{user?.fullName}</Text>
+                            <Text id={uid} >{user?.fullName}</Text>
                         );
                     })}
                 </MenuTrigger>
@@ -74,7 +68,7 @@ export default function MyGroupsScreen({ navigation }) {
                 <Button style={{marginBottom: 10}} title="Create group" onPress={() => navigation.navigate("Create Group")} />
             </View>
             <View style={styles.friendsContainer}>
-                <FlatList data={groupsCtx.groups} renderItem={itemData => renderGroup(itemData.item)}
+                <FlatList data={usersCtx.groups} renderItem={itemData => renderGroup(itemData.item)}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { refreshGroups(); }} />}
                 />
             </View>

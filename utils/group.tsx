@@ -33,21 +33,3 @@ export class Group {
         return this.data.anyoneCanEdit;
     }
 }
-
-export async function loadGroups(myUid: string, usersCtx, groupsCtx): Promise<Group[]> {
-    const q = query(collection(db, "groups"), where("members", "array-contains", myUid));
-    const docs = (await getDocs(q)).docs;
-    const groups = docs.map((d) => new Group(d));
-    await Promise.all(groups.map((g) => 
-        Promise.all(g.members.map(usersCtx.loadUserAsync))
-    ));
-    groupsCtx.setGroups(groups);
-    return groups;
-}
-
-export async function createGroup(myUid: string, friends: Array<Friend>, title: string, anyoneCanEdit: boolean, groupsCtx): Promise<void> {
-    const members: Array<string> = [myUid, ...friends.map((f) => f.uid)];
-    const admins: Array<string> = [myUid];
-    const docRef = await addDoc(collection(db, "groups"), { admins, members, title, anyoneCanEdit });
-    groupsCtx.addGroup(await Group.makeFromId(docRef.id));
-}
