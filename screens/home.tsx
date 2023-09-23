@@ -12,8 +12,8 @@ function WelcomeScreen({ navigation }) {
         <View style={styles.rootContainer}>
             <Text style={styles.title}>Welcome to Join.up!</Text>
             <Text style={{marginBottom: 10}}>Logged in as: {authCtx.email}</Text>
-            <Button style={styles.button} title="See upcoming events" onPress={() => navigation.navigate("Events", { title: "Upcoming events" })}></Button>
-            <Button style={styles.button} title="Events I'm going to" onPress={() => navigation.navigate("Events", { title: "Events I'm going to", rsvpdOnly: true })}></Button>
+            <Button style={styles.button} title="Upcoming events" onPress={() => navigation.navigate("Events", { title: "Upcoming events" })}></Button>
+            {/* <Button style={styles.button} title="Events I'm going to" onPress={() => navigation.navigate("Events", { title: "Events I'm going to", rsvpdOnly: true })}></Button> */}
             <Button style={styles.button} title="Past events" onPress={() => navigation.navigate("Events", { title: "Past events", past: true })}></Button>
             <Button style={styles.button} title="My friends" onPress={() => navigation.navigate("My Friends")}></Button>
             <Button style={styles.button} title="My groups" onPress={() => navigation.navigate("My Groups")}></Button>

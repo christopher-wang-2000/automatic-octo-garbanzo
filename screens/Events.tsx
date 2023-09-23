@@ -60,6 +60,7 @@ export default function EventsScreen({ navigation, ...props }) {
   const [selectingFilter, setSelectingFilter] = useState(false);
 
   const [hideRsvpdFilter, setHideRsvpdFilter] = useState(false);
+  const [showOnlyRsvpdEvents, setShowOnlyRsvpdEvents] = useState(false);
   const [showOnlyFriendEvents, setShowOnlyFriendEvents] = useState(false);
   const [filteredGroups, setFilteredGroups] = useState(new Array<string>);
 
@@ -147,19 +148,19 @@ export default function EventsScreen({ navigation, ...props }) {
       events = querySnapshot.docs.map(createEventFromDoc);
     }
     else {
-      const myEventsQuery = query(collection(db, "events"), where("uid", "==", myUid), timeframe);
-      let snapshotPromises = [getDocs(myEventsQuery)];
-      if (friends.length > 0) {
-        const friendQuery = query(collection(db, "events"), where("friendsCanSee", "==", true), where("uid", "in", friends.map((f: Friend) => f.uid)), timeframe);
-        snapshotPromises.push(getDocs(friendQuery));
-      }
-      if (groups.length > 0) {
-        const groupQuery = query(collection(db, "events"), where("invitedGroups", "array-contains-any", groups.map((g: Group) => g.docId)), timeframe);
-        snapshotPromises.push(getDocs(groupQuery));
-      }
-      const snapshots = await Promise.all(snapshotPromises);
-      events = snapshots.flatMap((s) => s.docs).map(createEventFromDoc);
-      events = [...new Map(events.map((e) => [e.docId, e])).values()] // remove duplicates
+    const myEventsQuery = query(collection(db, "events"), where("uid", "==", myUid), timeframe);
+    let snapshotPromises = [getDocs(myEventsQuery)];
+    if (friends.length > 0) {
+      const friendQuery = query(collection(db, "events"), where("friendsCanSee", "==", true), where("uid", "in", friends.map((f: Friend) => f.uid)), timeframe);
+      snapshotPromises.push(getDocs(friendQuery));
+    }
+    if (groups.length > 0) {
+      const groupQuery = query(collection(db, "events"), where("invitedGroups", "array-contains-any", groups.map((g: Group) => g.docId)), timeframe);
+      snapshotPromises.push(getDocs(groupQuery));
+    }
+    const snapshots = await Promise.all(snapshotPromises);
+    events = snapshots.flatMap((s) => s.docs).map(createEventFromDoc);
+    events = [...new Map(events.map((e) => [e.docId, e])).values()] // remove duplicates
     }
     eventsCtx.setEvents(events);
     await Promise.all(events.map((e: Event) => usersCtx.loadUser(e.creatorUid)));
@@ -244,7 +245,22 @@ export default function EventsScreen({ navigation, ...props }) {
       <View style={{height: "60%", marginTop: "auto", backgroundColor: "white", borderTopWidth: 1, borderTopColor: "gray"}}>
         <View style={{paddingHorizontal: 15, paddingVertical: 10}}>
           <Text style={{fontWeight: "bold", fontSize: 18, marginTop: 5, marginBottom: 8}}>Filter options:</Text>
-          {filterOptionSwitch(hideRsvpdFilter, setHideRsvpdFilter, "Hide events you're going to")}
+          {filterOptionSwitch(hideRsvpdFilter, (state) => {
+            if (state) {
+              setHideRsvpdFilter(true);
+              setShowOnlyRsvpdEvents(false);
+            } else {
+              setHideRsvpdFilter(false);
+            }
+          }, "Hide events you're going to")}
+          {filterOptionSwitch(showOnlyRsvpdEvents, (state) => {
+            if (state) {
+              setShowOnlyRsvpdEvents(true);
+              setHideRsvpdFilter(false);
+            } else {
+              setShowOnlyRsvpdEvents(false);
+            }
+          }, "Only show events you're going to")}
           {filterOptionSwitch(showOnlyFriendEvents, setShowOnlyFriendEvents, "Only show events made by friends")}
           <View style={{paddingLeft: 10, paddingTop: 14}}>
             <Text style={{fontSize: 16, marginBottom: 10}}>Only show events for these groups:</Text>
@@ -266,13 +282,14 @@ export default function EventsScreen({ navigation, ...props }) {
     if (hideRsvpdFilter) {
       eventsToShow = eventsToShow.filter((e) => !e.rsvps.includes(myUid));
     }
+    if (showOnlyRsvpdEvents) {
+      eventsToShow = eventsToShow.filter((e) => (e.rsvps.includes(myUid)));
+    }
     if (showOnlyFriendEvents) {
       const friendUids = usersCtx.friends.map((f) => f.uid);
       eventsToShow = eventsToShow.filter((e) => friendUids.includes(e.creatorUid));
     }
     if (filteredGroups.length > 0) {
-      console.log(filteredGroups);
-      console.log(eventsToShow);
       eventsToShow = eventsToShow.filter((e) => e.invitedGroups?.some((g) => filteredGroups.includes(g)));
     }
     return (
