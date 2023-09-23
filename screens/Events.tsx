@@ -1,11 +1,13 @@
 import { useContext, useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View, FlatList, Modal, RefreshControl, Pressable } from 'react-native';
+import { Alert, StyleSheet, Text, View, FlatList, RefreshControl, Pressable } from 'react-native';
 import { Button } from 'react-native-elements';
-import { collection, query, where, getDocs, orderBy, doc, deleteDoc, updateDoc, Query, DocumentData, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
+import Modal from "react-native-modal";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
 import { getCalendars } from 'expo-localization';
 
+import { collection, query, where, getDocs, orderBy, doc, deleteDoc, updateDoc, Query, DocumentData, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
 import { db } from '../firebase';
+
 import { AuthContext } from '../store/auth-context';
 import { EventsContext } from '../store/events-context';
 import { UsersContext } from '../store/users-context';
@@ -31,6 +33,7 @@ export type Event = {
   rsvps: Array<string>
 }
 
+
 export function createEventFromDoc(document: DocumentData) {
   const data = document.data();
   return {  docId: document.id,
@@ -53,6 +56,7 @@ export default function EventsScreen({ navigation, ...props }) {
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [rsvpEvent, setRsvpEvent] = useState(undefined);
+  const [selectingFilter, setSelectingFilter] = useState(false);
 
   const timezone: string | null = getCalendars()[0].timeZone;
   const past = (props?.route?.params?.past === true);
@@ -72,8 +76,7 @@ export default function EventsScreen({ navigation, ...props }) {
     return (
       <Menu key={event.docId} style={rsvpd ? styles.rsvpdEvent : styles.otherEvent}>
         <MenuTrigger>
-          <Text style={styles.eventTitle}>{event.title}</Text>
-          {inProgress && <Text style={styles.eventStatus}>(IN PROGRESS)</Text>}
+          <Text style={styles.eventTitle}>{event.title + (inProgress ? " (IN PROGRESS)" : "")}</Text>
 
           {oneDay && <Text style={styles.eventTime}>{event.startTime.toLocaleDateString() + ", " +
             event.startTime.toLocaleTimeString(undefined, { timeStyle: "short" })
@@ -90,12 +93,12 @@ export default function EventsScreen({ navigation, ...props }) {
             {!rsvpd && event.rsvps.length === 1 && <Text style={styles.eventRsvp}>1 person is coming</Text>}
             {!rsvpd && event.rsvps.length > 1 && <Text style={styles.eventRsvp}>{event.rsvps.length} people are coming</Text>}
             {rsvpd &&event.rsvps.length === 2 && <Text style={styles.eventRsvp}>You and {event.rsvps.length-1} other are coming</Text>}
-            {rsvpd &&event.rsvps.length !== 2 && <Text style={styles.eventRsvp}>You and {event.rsvps.length-1} others are coming</Text>}
+            {rsvpd &&event.rsvps.length > 2 && <Text style={styles.eventRsvp}>You and {event.rsvps.length-1} others are coming</Text>}
           </Pressable>
         </MenuTrigger>
         <MenuOptions>
-          {isMyEvent && <MenuOption text="Update event" onSelect={() => { navigation.navigate("Create Event", { event }) }} />}
-          {isMyEvent && <MenuOption text="Delete event" onSelect={() => deleteEvent(event)} />}
+          {isMyEvent && !past && <MenuOption text="Update event" onSelect={() => { navigation.navigate("Create Event", { event }) }} />}
+          {isMyEvent && !past && <MenuOption text="Delete event" onSelect={() => deleteEvent(event)} />}
           {!rsvpd && !ended && <MenuOption text="I'm coming!" onSelect={() => rsvp(event)}/>}
           {rsvpd && !ended && <MenuOption text="I'm no longer coming" onSelect={() => unrsvp(event)}/>}
         </MenuOptions>
@@ -172,22 +175,50 @@ export default function EventsScreen({ navigation, ...props }) {
   function rsvpOverlay() {
     return (
       <Modal
-      animationType="slide"
-      transparent={true}
-      visible={(rsvpEvent !== undefined)}
-      onRequestClose={() => {
-        setRsvpEvent(undefined);
-      }}>
-      <View style={{height: "40%", marginTop: "auto", backgroundColor: "#D3D3D3"}}>
+      backdropOpacity={0.5}
+      isVisible={(rsvpEvent !== undefined)}
+      style={{margin: 0}}
+      swipeDirection={"down"}
+      onBackdropPress={() => setRsvpEvent(undefined)}
+      onSwipeComplete={() => setRsvpEvent(undefined)}
+      >
+      <View style={{height: "30%", marginTop: "auto", backgroundColor: "white", borderTopWidth: 1, borderTopColor: "gray"}}>
         <View style={{padding: 8}}>
-          <Button title={"Close"} onPress={() => setRsvpEvent(undefined)} />
-          <Text style={{fontSize: 18, fontWeight: "bold", marginTop: 5, marginBottom: 5}}>Who's coming to {rsvpEvent?.title}:</Text>
+          <Text style={{fontSize: 18, fontWeight: "bold", marginTop: 5, marginBottom: 5}}>Coming to {rsvpEvent?.title}:</Text>
           <FlatList data={rsvpEvent?.rsvps} renderItem={rsvpUid => (
             <Text style={{fontSize: 16, marginBottom: 2}}>{usersCtx.getUser(rsvpUid.item).fullName}</Text>
           )}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={() => { getEvents(); }} />
           } />
+        </View>
+      </View>
+    </Modal>
+    )
+  }
+
+  function filterOverlay() {
+    return (
+      <Modal
+      backdropOpacity={0.5}
+      isVisible={selectingFilter}
+      style={{margin: 0}}
+      swipeDirection={"down"}
+      onBackdropPress={() => setSelectingFilter(false)}
+      onSwipeComplete={() => setSelectingFilter(false)}
+      >
+      <View style={{height: "50%", marginTop: "auto", backgroundColor: "white", borderTopWidth: 1, borderTopColor: "gray"}}>
+        <View style={{padding: 8}}>
+
+          <View style={{flexDirection: "row", justifyContent: "center", gap: 10}}>
+            <View style={{flex: 1}}>
+              <Button title={"Cancel"} onPress={() => setSelectingFilter(false)} />
+            </View>
+            <View style={{flex: 1}}>
+              <Button title={"Filter"}  />
+            </View>
+          </View>
+          
         </View>
       </View>
     </Modal>
@@ -201,17 +232,21 @@ export default function EventsScreen({ navigation, ...props }) {
   return (
     <View style={styles.rootContainer}>
       <Text style={styles.title}>{props?.route?.params?.title}</Text>
-      {!past && <Button style={styles.createEvent} title="Create new event" onPress={() => navigation.navigate("Create Event")} />}
-      <Text>Timezone: {timezone}</Text>
-      <Text>Scroll up to refresh</Text>
+      <View style={{flexDirection: "row", gap: 15}}>
+        {!past && <Button style={styles.createEvent} title="Create event" onPress={() => navigation.navigate("Create Event")} />}
+        <Button style={{}} title="Filter events" onPress={() => setSelectingFilter(true)}/>
+      </View>
+      
+      <Text style={{paddingBottom: 5}}>Timezone: {timezone}</Text>
       <View style={styles.eventsContainer}>
         {(eventsCtx.events.length === 0) && <Text style={styles.noEventText}>There are currently no upcoming events. Create one to get started!</Text>}
-        <FlatList data={eventsCtx.events} renderItem={itemData => renderEvent(itemData.item)}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => { getEvents(); }} />
-          } />
+          <FlatList style={{paddingVertical: 5}} contentContainerStyle={{paddingBottom: 10}} data={eventsCtx.events} renderItem={itemData => renderEvent(itemData.item)}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={() => { getEvents(); }} />
+            } />
       </View>
       {rsvpOverlay()}
+      {filterOverlay()}
     </View>
   );
 }
@@ -221,7 +256,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 32,
+    paddingTop: 20
   },
   title: {
     flex: 1,
@@ -234,9 +269,10 @@ const styles = StyleSheet.create({
   },
   eventsContainer: {
     flex: 14,
-    padding: 5,
+    paddingHorizontal: 28,
     borderColor: "grey",
-    borderWidth: 1,
+    borderTopWidth: 3,
+    borderBottomWidth: 0,
     width: "100%",
   },
   noEventText: {
@@ -246,13 +282,15 @@ const styles = StyleSheet.create({
   },
   rsvpdEvent: {
     marginVertical: 5,
-    padding: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: "lightgreen",
     borderRadius: 15
   },
   otherEvent: {
     marginVertical: 5,
-    padding: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     backgroundColor: "lightblue",
     borderRadius: 15
   },
@@ -276,6 +314,12 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     marginTop: 5,
     fontWeight: "bold",
-    color: "#001066"
+    color: "#001066",
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    overflow: "hidden",
+    alignSelf: "flex-start"
   },
 });

@@ -96,7 +96,7 @@ function CreateEventScreen({ navigation, ...props }) {
         }
         const checked: boolean = group ? invitedGroups?.includes(group.docId) : friendsCanSee;
         return (
-            <View style={{flexDirection: "row", backgroundColor: "white", borderRadius: 20, padding: 12, margin: 5, alignItems: "center" }}>
+            <View style={{flexDirection: "row", borderColor: "#D4D4D4", borderWidth: 1, backgroundColor: "white", borderRadius: 20, padding: 12, margin: 5, alignItems: "center" }}>
                 <Text style={{flex: 1, marginLeft: 15, fontSize: 16}}>{title}</Text>
                 <Checkbox style={{borderRadius: 10}} value={checked}
                     onValueChange={(checked) => (group ? onPressGroup(checked) : onPressFriends(checked))} />

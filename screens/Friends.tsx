@@ -130,7 +130,6 @@ export default function MyFriendsScreen({ navigation }) {
                 <Input placeholder="Enter email here" onChangeText={setNewFriendEmail} />
                 <Button title="Add friend" onPress={add} />
             </View>
-            <Text>Scroll up to refresh</Text>
             <View style={styles.friendsContainer}>
                 <FlatList data={usersCtx.friends} renderItem={itemData => renderFriend(itemData.item)}
                     refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { loadFriendsAndRefresh(); }} />}
