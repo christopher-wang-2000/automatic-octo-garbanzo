@@ -6,6 +6,7 @@ import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-m
 import { Checkbox } from 'expo-checkbox';
 import { getCalendars } from 'expo-localization';
 import RNCalendarEvents from "react-native-calendar-events";
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 import { collection, query, where, getDocs, orderBy, doc, deleteDoc, updateDoc, Query, DocumentData, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
 import { db } from '../firebase';
@@ -81,6 +82,39 @@ export default function EventsScreen({ navigation, ...props }) {
     const rsvpd = (event.rsvps.includes(myUid));
     const showRsvpText = (event.rsvps.length - (rsvpd ? 1 : 0)) > 0;
 
+    async function addToGoogleCalendar(event: Event) {
+      try {
+        if (!(await GoogleSignin.isSignedIn())) {
+          await GoogleSignin.signIn();
+        }
+        const accessToken = (await GoogleSignin.getTokens()).accessToken;
+        const response = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'X-goog-api-header': 'AIzaSyBu9aKJH7CmvYC1JatUN8uuUCAc7z9_jtI'
+            },
+            body: JSON.stringify({
+                'start': { 'dateTime': event.startTime.toISOString() },
+                'end': { 'dateTime': event.endTime.toISOString() },
+                'summary': event.title,
+                'description': event.description,
+                // 'id': event.docId,
+            })
+        });
+        if (response["ok"]) {
+          Alert.alert("Event successfully exported!");
+        }
+        else {
+          Alert.alert("Export to Google Calendar failed. Contact the creator for support.");
+        }
+      }
+      catch (err) {
+          console.error(err);
+          Alert.alert("Export to Google Calendar failed. Contact the creator for support.");
+      }
+    }
+
     return (
       <Menu key={event.docId} style={rsvpd ? styles.rsvpdEvent : styles.otherEvent}>
         <MenuTrigger>
@@ -112,6 +146,7 @@ export default function EventsScreen({ navigation, ...props }) {
           {isMyEvent && <MenuOption text="Delete event" onSelect={() => deleteEvent(event)} />}
           {!rsvpd && !ended && <MenuOption text="I'm coming!" onSelect={() => rsvp(event)}/>}
           {rsvpd && !ended && <MenuOption text="I'm no longer coming" onSelect={() => unrsvp(event)}/>}
+          <MenuOption text="Add to Google Calendar" onSelect={() => addToGoogleCalendar(event)} />
         </MenuOptions>
       </Menu>
     );

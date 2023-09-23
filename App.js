@@ -36,7 +36,7 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   GoogleSignin.configure({
     scopes: ['https://www.googleapis.com/auth/calendar'],
-    webClientId: '749085154063-h0pob55rj40ksv0bfi98bfn7oqdsfkqg.apps.googleusercontent.com'
+    webClientId: '566822880515-htqgd1o219n75cto89c4k9105oq0qv4r.apps.googleusercontent.com'
   });
   return (
     <AuthContextProvider>
