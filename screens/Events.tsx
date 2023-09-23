@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View, FlatList, RefreshControl, Pressable, Switch } from 'react-native';
+import { Alert, StyleSheet, Text, View, ScrollView, FlatList, RefreshControl, Pressable, Switch } from 'react-native';
 import { Button } from 'react-native-elements';
 import Modal from "react-native-modal";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
@@ -96,8 +96,9 @@ export default function EventsScreen({ navigation, ...props }) {
           <Text style={styles.eventCreatedBy}>Created by {creator}</Text>
           {event.description && <Text style={styles.eventDescription}>{event.description}</Text>}
 
-          {showRsvpText && <View style={styles.rsvpContainer}>
+          {<View style={styles.rsvpContainer}>
             <Pressable onPress={() => { activateRsvpOverlay(event); }}>
+              {!showRsvpText && <Text style={styles.rsvpText}>See who's invited</Text>}
               {!rsvpd && event.rsvps.length === 1 && <Text style={styles.rsvpText}>1 person is coming</Text>}
               {!rsvpd && event.rsvps.length > 1 && <Text style={styles.rsvpText}>{event.rsvps.length} people are coming</Text>}
               {rsvpd &&event.rsvps.length === 2 && <Text style={styles.rsvpText}>You and {event.rsvps.length-1} other are coming</Text>}
@@ -191,15 +192,21 @@ export default function EventsScreen({ navigation, ...props }) {
       onBackdropPress={() => setRsvpEvent(undefined)}
       onSwipeComplete={() => setRsvpEvent(undefined)}
       >
-      <View style={{height: "30%", marginTop: "auto", backgroundColor: "white", borderTopWidth: 1, borderTopColor: "gray"}}>
-        <View style={{padding: 8}}>
-          <Text style={{fontSize: 18, fontWeight: "bold", marginTop: 5, marginBottom: 5}}>Coming to {rsvpEvent?.title}:</Text>
-          <FlatList data={rsvpEvent?.rsvps} renderItem={rsvpUid => (
-            <Text style={{fontSize: 16, marginBottom: 2}}>{usersCtx.getUser(rsvpUid.item).fullName}</Text>
-          )}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={() => { getEvents(); }} />
-          } />
+      <View style={{height: "50%", marginTop: "auto", backgroundColor: "white", borderTopWidth: 1, borderTopColor: "gray", borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: "hidden"}}>
+        <View style={{paddingTop: 12, paddingHorizontal: 18}}>
+          <Text style={{fontSize: 18, fontWeight: "bold", marginTop: 5, marginBottom: 5}}>{rsvpEvent?.title}:</Text>
+          <ScrollView>
+            <Text style={{fontSize: 16, fontWeight: "bold", marginTop: 10, marginBottom: 5}}>Invited groups you're in:</Text>
+            {rsvpEvent?.friendsCanSee && <Text style={{fontSize: 16, marginBottom: 2, marginLeft: 5}}>{usersCtx.getUser(rsvpEvent?.creatorUid).firstName}'s friends</Text>}
+            {usersCtx.groups.filter((group: Group) => (group.members.includes(myUid) && rsvpEvent?.invitedGroups.includes(group.docId)))
+              .map((group: Group) => (
+                <Text key={group.docId} style={{fontSize: 16, marginBottom: 2}}>{group.title}</Text>
+            ))}
+            <Text style={{fontSize: 16, fontWeight: "bold", marginTop: 10, marginBottom: 5}}>People who are coming:</Text>
+            {rsvpEvent?.rsvps.map((rsvpUid: string) => (
+              <Text key={rsvpUid} style={{fontSize: 16, marginBottom: 2, marginLeft: 5}}>{usersCtx.getUser(rsvpUid).fullName}</Text>
+            ))}
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -242,9 +249,9 @@ export default function EventsScreen({ navigation, ...props }) {
       onBackdropPress={() => setSelectingFilter(false)}
       onSwipeComplete={() => setSelectingFilter(false)}
       >
-      <View style={{height: "60%", marginTop: "auto", backgroundColor: "white", borderTopWidth: 1, borderTopColor: "gray"}}>
+      <View style={{height: "60%", marginTop: "auto", backgroundColor: "white", borderTopWidth: 1, borderTopColor: "gray", borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: "hidden"}}>
         <View style={{paddingHorizontal: 15, paddingVertical: 10}}>
-          <Text style={{fontWeight: "bold", fontSize: 18, marginTop: 5, marginBottom: 8}}>Filter options:</Text>
+          <Text style={{fontWeight: "bold", fontSize: 18, marginTop: 8, marginBottom: 8}}>Filter options:</Text>
           {filterOptionSwitch(hideRsvpdFilter, (state) => {
             if (state) {
               setHideRsvpdFilter(true);

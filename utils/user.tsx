@@ -14,6 +14,10 @@ export class User {
         return new User(docs[0].data());
     }
 
+    static makeDummy(): User {
+        return new User(undefined);
+    }
+
     get uid(): string {
         return this.userDoc.uid;
     }
@@ -24,7 +28,7 @@ export class User {
         return this.userDoc.fullName;
     }
     get firstName(): string {
-        return this.userDoc.lastName;
+        return this.userDoc.firstName;
     }
     get lastName(): string {
         return this.userDoc.lastName;

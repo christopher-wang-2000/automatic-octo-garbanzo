@@ -46,7 +46,7 @@ export default function MyGroupsScreen({ navigation }) {
                     {group.members.map((uid) => {
                         const user: User = usersCtx.getUser(uid);
                         return (
-                            <Text id={uid} >{user?.fullName}</Text>
+                            <Text key={uid} >{user?.fullName}</Text>
                         );
                     })}
                 </MenuTrigger>
