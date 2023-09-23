@@ -5,12 +5,14 @@ import { Button, Input } from 'react-native-elements'
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
+import { auth } from '../firebase';
 import { collection, doc, addDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 import { register } from './Auth';
 import LoadingOverlay from '../screens/LoadingOverlay';
 import { AuthContext } from '../store/auth-context';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function Register({ navigation }) {
   const [enteredEmail, setEnteredEmail] = useState('');
@@ -50,11 +52,15 @@ export default function Register({ navigation }) {
       setIsAuthenticating(true);
 
       try {
-        const { token, uid } = await register(email, password);
-        await setDoc(doc(db, "users", uid),
-          { uid, email, firstName, lastName, fullName: firstName + " " + lastName });
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // const { token, uid } = await register(email, password);
+        // await setDoc(doc(db, "users", uid),
+        //   { uid, email, firstName, lastName, fullName: firstName + " " + lastName });
+        // authCtx.authenticate(token, email, uid);
+        const token = await userCredential.user.getIdToken();
+        // const { token, uid } = await login(email, password);
         setIsAuthenticating(false);
-        authCtx.authenticate(token, email, uid);
+        authCtx.authenticate(token, email, userCredential.user.uid);
       }
       catch (error) {
         console.log(error.response);

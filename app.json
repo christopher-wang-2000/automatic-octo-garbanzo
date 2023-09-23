@@ -19,7 +19,12 @@
       "bundleIdentifier": "com.chriswang.joinup",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
-        "NSCalendarsUsageDescription": "This app reads from and exports events to your calendar."
+        "NSCalendarsUsageDescription": "This app reads from and exports events to your calendar.",
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["com.googleusercontent.apps.749085154063-iempiigikhk5j3us4o4dl5pmg82lb795"]
+          }
+        ]
       }
     },
     "android": {

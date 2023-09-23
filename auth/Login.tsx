@@ -6,8 +6,10 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { login } from './Auth';
+import { auth } from '../firebase';
 import LoadingOverlay from '../screens/LoadingOverlay';
 import { AuthContext } from '../store/auth-context';
+import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function Login({ navigation }) {
   const [enteredEmail, setEnteredEmail] = useState('');
@@ -21,9 +23,12 @@ export default function Login({ navigation }) {
     setIsAuthenticating(true);
 
     try {
-      const { token, uid } = await login(email, password);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const token = await userCredential.user.getIdToken();
+      // const { token, uid } = await login(email, password);
       setIsAuthenticating(false);
-      authCtx.authenticate(token, email, uid);
+      authCtx.authenticate(token, email, userCredential.user.uid);
+      console.log("hello!");
     }
     catch (error) {
       console.log(error.response);

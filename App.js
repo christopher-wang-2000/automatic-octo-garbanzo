@@ -11,6 +11,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 import Login from './auth/Login';
 import Register from './auth/NewUser';
+import { auth } from './firebase';
 
 import AuthContextProvider from './store/auth-context'
 import EventsContextProvider from './store/events-context';
@@ -33,7 +34,10 @@ LogBox.ignoreLogs([
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-  GoogleSignin.configure();
+  GoogleSignin.configure({
+    scopes: ['https://www.googleapis.com/auth/calendar'],
+    webClientId: '749085154063-h0pob55rj40ksv0bfi98bfn7oqdsfkqg.apps.googleusercontent.com'
+  });
   return (
     <AuthContextProvider>
       <MenuProvider>
