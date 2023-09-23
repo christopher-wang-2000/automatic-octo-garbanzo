@@ -4,7 +4,7 @@ import { Button } from 'react-native-elements';
 
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
-import { GoogleSigninButton } from '@react-native-google-signin/google-signin';
+import { GoogleSignin, GoogleSigninButton } from '@react-native-google-signin/google-signin';
 
 function WelcomeScreen({ navigation }) {
     const authCtx = useContext(AuthContext);

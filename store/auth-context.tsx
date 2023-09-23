@@ -19,8 +19,6 @@ export default function AuthContextProvider({ children }) {
     const [userEmail, setUserEmail] = useState(null);
     const [userId, setUserId] = useState(null);
     const [googleUserInfo, setGoogleUserInfo] = useState(null);
-    const [firstName, setFirstName] = useState(null);
-    const [lastName, setLastName] = useState(null);
 
     function authenticate(token: string | null, email: string, uid: string) {
         setAuthToken(token);
@@ -44,7 +42,6 @@ export default function AuthContextProvider({ children }) {
         try {
             const userInfo = await GoogleSignin.signIn();
             setGoogleUserInfo(userInfo);
-            console.log(userInfo);
             return userInfo;
         }
         catch (error) {
@@ -70,7 +67,7 @@ export default function AuthContextProvider({ children }) {
         isAuthenticated: !!authToken,
         email: userEmail,
         uid: userId,
-        googleUserInfo: null,
+        googleUserInfo,
         authenticate,
         logout,
         googleLogin,

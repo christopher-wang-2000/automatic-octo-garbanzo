@@ -3,6 +3,7 @@ import { Alert, StyleSheet, Text, View, FlatList, RefreshControl } from 'react-n
 import { Input, Button } from 'react-native-elements';
 import { collection, query, where, getDocs, orderBy, doc, addDoc, updateDoc, getDoc, deleteDoc, QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
@@ -12,11 +13,36 @@ import LoadingOverlay from './LoadingOverlay';
 import { User } from '../utils/user';
 import { FriendStatus, Friend } from '../utils/friend';
 
-
 export default function MyFriendsScreen({ navigation }) {
     const authCtx = useContext(AuthContext);
     const usersCtx = useContext(UsersContext);
     const myUid = authCtx.uid;
+
+    useEffect(() => {
+        async function addEvent() {
+            try {
+                const accessToken = (await GoogleSignin.getTokens()).accessToken;
+                fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${accessToken}`,
+                        'X-goog-api-header': 'AIzaSyAulg52vIfPkYKhLMEk63WQZzrvNSoVJ-g'
+                    },
+                    body: JSON.stringify({
+                        'start': { 'date': '2023-09-23' },
+                        'end': { 'date': '2023-09-26' },
+                    })
+                })
+                .then(response => response.json())
+                .then(response => console.log(response))
+                .catch(err => console.error(err));
+            }
+            catch (err) {
+                console.log("not logged in: ", err);
+            }
+        }
+        addEvent();
+    }, []);
 
     const [loadingStatus, setLoadingStatus] = useState(false);
     const [addingStatus, setAddingStatus] = useState(false);
