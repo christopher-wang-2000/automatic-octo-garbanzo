@@ -16,20 +16,30 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.chriswang.joinup"
+      "bundleIdentifier": "com.chriswang.joinup",
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "infoPlist": {
+        "NSCalendarsUsageDescription": "This app reads from and exports events to your calendar."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.chriswang.joinup"
+      "package": "com.chriswang.joinup",
+      "googleServicesFile": "./google-services.json"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-localization"
+      "expo-localization",
+      "@react-native-google-signin/google-signin",
+      ["expo-calendar",
+      {
+        "calendarPermission": "The app needs to access the calendar to read and export events."
+      }]
     ]
   }
 }

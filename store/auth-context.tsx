@@ -1,23 +1,28 @@
 import { createContext, useState } from 'react';
+import { GoogleSignin, User } from '@react-native-google-signin/google-signin';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const AuthContext = createContext({
     token: '',
     isAuthenticated: false,
-    email: null,
-    uid: null,
-    authenticate: (token: string|null, email: string|null, uid: string|null) => { },
+    email: '',
+    uid: '',
+    googleUserInfo: null,
+    authenticate: (token: string | null, email: string | null, uid: string | null) => { },
     logout: () => { },
+    googleLogin: async () => null,
+    googleLogout: async () => false,
 });
 
 export default function AuthContextProvider({ children }) {
     const [authToken, setAuthToken] = useState(null);
     const [userEmail, setUserEmail] = useState(null);
     const [userId, setUserId] = useState(null);
+    const [googleUserInfo, setGoogleUserInfo] = useState(null);
     const [firstName, setFirstName] = useState(null);
     const [lastName, setLastName] = useState(null);
 
-    function authenticate(token: string|null, email: string, uid: string) {
+    function authenticate(token: string | null, email: string, uid: string) {
         setAuthToken(token);
         setUserEmail(email);
         setUserId(uid);
@@ -35,13 +40,41 @@ export default function AuthContextProvider({ children }) {
         AsyncStorage.removeItem('uid');
     }
 
+    async function googleLogin(): Promise<User> {
+        try {
+            const userInfo = await GoogleSignin.signIn();
+            setGoogleUserInfo(userInfo);
+            console.log(userInfo);
+            return userInfo;
+        }
+        catch (error) {
+            console.error(error);
+            return undefined;
+        }
+    }
+
+    async function googleLogout(): Promise<boolean> {
+        try {
+            await GoogleSignin.signOut();
+            setGoogleUserInfo(null);
+            return true;
+        }
+        catch (error) {
+            console.error(error);
+            return false;
+        }
+    }
+
     const value = {
         token: authToken,
         isAuthenticated: !!authToken,
         email: userEmail,
         uid: userId,
-        authenticate: authenticate,
-        logout: logout
+        googleUserInfo: null,
+        authenticate,
+        logout,
+        googleLogin,
+        googleLogout,
     }
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

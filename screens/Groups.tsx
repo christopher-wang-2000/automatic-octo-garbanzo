@@ -42,11 +42,11 @@ export default function MyGroupsScreen({ navigation }) {
             <Menu key={group.docId} style={styles.group}>
                 <MenuTrigger>
                     <Text style={{fontWeight: "bold"}}>{group.title}</Text>
-                    <Text style={{fontStyle: "italic", marginBottom: 5}}>{group.members.length} members</Text>
+                    <Text style={{fontStyle: "italic", marginBottom: 5}}>{group.members.length} members {group.isPrivate ? "(private)" : ""}</Text>
                     {group.members.map((uid) => {
                         const user: User = usersCtx.getUser(uid);
                         return (
-                            <Text key={uid} >{user?.fullName}</Text>
+                            <Text key={uid} >{user?.fullName} {group.admins.includes(uid) ? "(admin)" : ""}</Text>
                         );
                     })}
                 </MenuTrigger>

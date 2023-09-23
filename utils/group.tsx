@@ -32,4 +32,7 @@ export class Group {
     get anyoneCanEdit(): boolean {
         return this.data.anyoneCanEdit;
     }
+    get isPrivate(): boolean {
+        return this.data.isPrivate;
+    }
 }

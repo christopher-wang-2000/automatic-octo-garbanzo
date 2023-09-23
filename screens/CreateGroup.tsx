@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View, TextInput, FlatList } from 'react-native';
+import { Alert, StyleSheet, Text, View, TextInput, FlatList, Switch } from 'react-native';
 import { Button, Input } from 'react-native-elements';
 import { RoundedCheckbox } from 'react-native-rounded-checkbox';
 
@@ -22,6 +22,8 @@ export default function CreateGroupScreen({ navigation }) {
     const [title, setTitle] = useState("");
     const [loadingMessage, setLoadingMessage] = useState("");
     const [friendsInGroup, setFriendsInGroup] = useState([]);
+    const [anyoneCanEdit, setAnyoneCanEdit] = useState(false);
+    const [isPrivate, setIsPrivate] = useState(false);
 
     function renderFriendSelect(friend: Friend) {
         return (
@@ -62,11 +64,19 @@ export default function CreateGroupScreen({ navigation }) {
     return (
         <View style={styles.rootContainer}>
             <Input placeholder="Group name" defaultValue={title} onChangeText={setTitle} />
-            <Button title="Create" style={{marginBottom: 15}} onPress={create} />
+            <View style={{paddingBottom: 15, flexDirection: "row", alignItems: "center"}}>
+                <Text style={{flex: 1, fontSize: 16}}>All members can add and remove</Text>
+                <Switch value={anyoneCanEdit} onValueChange={setAnyoneCanEdit} />
+            </View>
+            <View style={{paddingBottom: 20, flexDirection: "row", alignItems: "center"}}>
+                <Text style={{flex: 1, fontSize: 16}}>Make group private</Text>
+                <Switch value={isPrivate} onValueChange={setIsPrivate} />
+            </View>
             <Text style={{fontSize: 18, fontWeight: "bold"}}>Add friends:</Text>
             <View style={styles.friendsContainer}>
                 <FlatList data={usersCtx.friends} renderItem={itemData => renderFriendSelect(itemData.item)} />
             </View>
+            <Button title="Create" style={{marginBottom: 15}} onPress={create} />
         </View>
     );
 }
@@ -96,9 +106,9 @@ const styles = StyleSheet.create({
         padding: 8
     },
     friendsContainer: {
-        borderColor: "black",
+        borderColor: "gray",
         borderWidth: 1,
         flex: 1,
-        padding: 10
+        padding: 10,
     }
 });

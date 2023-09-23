@@ -7,6 +7,7 @@ import { useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppLoading from 'expo-app-loading';
 import { MenuProvider } from 'react-native-popup-menu';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 import Login from './auth/Login';
 import Register from './auth/NewUser';
@@ -32,7 +33,7 @@ LogBox.ignoreLogs([
 const Stack = createNativeStackNavigator();
 
 export default function App() {
-
+  GoogleSignin.configure();
   return (
     <AuthContextProvider>
       <MenuProvider>

@@ -5,6 +5,7 @@ import Modal from "react-native-modal";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
 import { Checkbox } from 'expo-checkbox';
 import { getCalendars } from 'expo-localization';
+import RNCalendarEvents from "react-native-calendar-events";
 
 import { collection, query, where, getDocs, orderBy, doc, deleteDoc, updateDoc, Query, DocumentData, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
 import { db } from '../firebase';
@@ -200,7 +201,7 @@ export default function EventsScreen({ navigation, ...props }) {
             {rsvpEvent?.friendsCanSee && <Text style={{fontSize: 16, marginBottom: 2, marginLeft: 5}}>{usersCtx.getUser(rsvpEvent?.creatorUid).firstName}'s friends</Text>}
             {usersCtx.groups.filter((group: Group) => (group.members.includes(myUid) && rsvpEvent?.invitedGroups.includes(group.docId)))
               .map((group: Group) => (
-                <Text key={group.docId} style={{fontSize: 16, marginBottom: 2}}>{group.title}</Text>
+                <Text key={group.docId} style={{fontSize: 16, marginBottom: 2, marginLeft: 5}}>{group.title}</Text>
             ))}
             <Text style={{fontSize: 16, fontWeight: "bold", marginTop: 10, marginBottom: 5}}>People who are coming:</Text>
             {rsvpEvent?.rsvps.map((rsvpUid: string) => (
