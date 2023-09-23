@@ -2,7 +2,7 @@ import { createContext, useReducer } from "react";
 import { Event } from "../screens/Events";
 
 export const EventsContext = createContext({
-    events: [],
+    events: new Array<Event>(),
     addEvent: (event: Event) => {},
     updateEvent: (event: Event) => {},
     deleteEvent: (event: Event) => {},

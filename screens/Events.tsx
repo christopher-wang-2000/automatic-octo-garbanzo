@@ -1,8 +1,9 @@
 import { useContext, useEffect, useState } from 'react';
-import { Alert, StyleSheet, Text, View, FlatList, RefreshControl, Pressable } from 'react-native';
+import { Alert, StyleSheet, Text, View, FlatList, RefreshControl, Pressable, Switch } from 'react-native';
 import { Button } from 'react-native-elements';
 import Modal from "react-native-modal";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
+import { Checkbox } from 'expo-checkbox';
 import { getCalendars } from 'expo-localization';
 
 import { collection, query, where, getDocs, orderBy, doc, deleteDoc, updateDoc, Query, DocumentData, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
@@ -29,7 +30,7 @@ export type Event = {
   description: string,
   creatorUid: string,
   friendsCanSee: boolean,
-  invitedGroups: Array<Group>
+  invitedGroups: Array<string>
   rsvps: Array<string>
 }
 
@@ -58,6 +59,10 @@ export default function EventsScreen({ navigation, ...props }) {
   const [rsvpEvent, setRsvpEvent] = useState(undefined);
   const [selectingFilter, setSelectingFilter] = useState(false);
 
+  const [hideRsvpdFilter, setHideRsvpdFilter] = useState(false);
+  const [showOnlyFriendEvents, setShowOnlyFriendEvents] = useState(false);
+  const [filteredGroups, setFilteredGroups] = useState(new Array<string>);
+
   const timezone: string | null = getCalendars()[0].timeZone;
   const past = (props?.route?.params?.past === true);
   const rsvpdOnly = (props?.route?.params?.rsvpdOnly === true);
@@ -72,6 +77,7 @@ export default function EventsScreen({ navigation, ...props }) {
     const inProgress = (currentTime >= event.startTime.getTime()) && (currentTime < event.endTime.getTime());
     const ended = (currentTime >= event.endTime.getTime());
     const rsvpd = (event.rsvps.includes(myUid));
+    const showRsvpText = (event.rsvps.length - (rsvpd ? 1 : 0)) > 0;
 
     return (
       <Menu key={event.docId} style={rsvpd ? styles.rsvpdEvent : styles.otherEvent}>
@@ -89,16 +95,18 @@ export default function EventsScreen({ navigation, ...props }) {
           <Text style={styles.eventCreatedBy}>Created by {creator}</Text>
           {event.description && <Text style={styles.eventDescription}>{event.description}</Text>}
 
-          <Pressable onPress={() => { activateRsvpOverlay(event); }}>
-            {!rsvpd && event.rsvps.length === 1 && <Text style={styles.eventRsvp}>1 person is coming</Text>}
-            {!rsvpd && event.rsvps.length > 1 && <Text style={styles.eventRsvp}>{event.rsvps.length} people are coming</Text>}
-            {rsvpd &&event.rsvps.length === 2 && <Text style={styles.eventRsvp}>You and {event.rsvps.length-1} other are coming</Text>}
-            {rsvpd &&event.rsvps.length > 2 && <Text style={styles.eventRsvp}>You and {event.rsvps.length-1} others are coming</Text>}
-          </Pressable>
+          {showRsvpText && <View style={styles.rsvpContainer}>
+            <Pressable onPress={() => { activateRsvpOverlay(event); }}>
+              {!rsvpd && event.rsvps.length === 1 && <Text style={styles.rsvpText}>1 person is coming</Text>}
+              {!rsvpd && event.rsvps.length > 1 && <Text style={styles.rsvpText}>{event.rsvps.length} people are coming</Text>}
+              {rsvpd &&event.rsvps.length === 2 && <Text style={styles.rsvpText}>You and {event.rsvps.length-1} other are coming</Text>}
+              {rsvpd &&event.rsvps.length > 2 && <Text style={styles.rsvpText}>You and {event.rsvps.length-1} others are coming</Text>}
+            </Pressable>
+          </View>}
         </MenuTrigger>
         <MenuOptions>
-          {isMyEvent && !past && <MenuOption text="Update event" onSelect={() => { navigation.navigate("Create Event", { event }) }} />}
-          {isMyEvent && !past && <MenuOption text="Delete event" onSelect={() => deleteEvent(event)} />}
+          {isMyEvent && <MenuOption text="Update event" onSelect={() => { navigation.navigate("Create Event", { event }) }} />}
+          {isMyEvent && <MenuOption text="Delete event" onSelect={() => deleteEvent(event)} />}
           {!rsvpd && !ended && <MenuOption text="I'm coming!" onSelect={() => rsvp(event)}/>}
           {rsvpd && !ended && <MenuOption text="I'm no longer coming" onSelect={() => unrsvp(event)}/>}
         </MenuOptions>
@@ -197,7 +205,33 @@ export default function EventsScreen({ navigation, ...props }) {
     )
   }
 
+  function renderGroupSelect(group: Group) {
+    function onPress(checked: boolean) {
+        if (checked) {
+            setFilteredGroups([...filteredGroups, group.docId]);
+        } else {
+            setFilteredGroups(filteredGroups.filter((groupId: string) => (groupId !== group.docId)));
+        }
+    }
+    const checked: boolean = filteredGroups.includes(group.docId);
+    return (
+        <View style={{flexDirection: "row", borderColor: "#D4D4D4", borderWidth: 1, backgroundColor: "white", borderRadius: 10, padding: 12, margin: 5, alignItems: "center" }}>
+            <Text style={{flex: 1, marginLeft: 15, fontSize: 16}}>{group.title}</Text>
+            <Checkbox style={{borderRadius: 5}} value={checked}
+                onValueChange={onPress} />
+        </View>
+    )
+  }
+
   function filterOverlay() {
+    function filterOptionSwitch(state: boolean, setState, label: string) {
+      return (
+        <View style={{paddingLeft: 10, paddingVertical: 8, flexDirection: "row", alignItems: "center"}}>
+          <Text style={{flex: 1, fontSize: 16}}>{label}</Text>
+          <Switch value={state} onValueChange={setState} />
+        </View>
+      );
+    }
     return (
       <Modal
       backdropOpacity={0.5}
@@ -207,18 +241,16 @@ export default function EventsScreen({ navigation, ...props }) {
       onBackdropPress={() => setSelectingFilter(false)}
       onSwipeComplete={() => setSelectingFilter(false)}
       >
-      <View style={{height: "50%", marginTop: "auto", backgroundColor: "white", borderTopWidth: 1, borderTopColor: "gray"}}>
-        <View style={{padding: 8}}>
-
-          <View style={{flexDirection: "row", justifyContent: "center", gap: 10}}>
-            <View style={{flex: 1}}>
-              <Button title={"Cancel"} onPress={() => setSelectingFilter(false)} />
-            </View>
-            <View style={{flex: 1}}>
-              <Button title={"Filter"}  />
-            </View>
+      <View style={{height: "60%", marginTop: "auto", backgroundColor: "white", borderTopWidth: 1, borderTopColor: "gray"}}>
+        <View style={{paddingHorizontal: 15, paddingVertical: 10}}>
+          <Text style={{fontWeight: "bold", fontSize: 18, marginTop: 5, marginBottom: 8}}>Filter options:</Text>
+          {filterOptionSwitch(hideRsvpdFilter, setHideRsvpdFilter, "Hide events you're going to")}
+          {filterOptionSwitch(showOnlyFriendEvents, setShowOnlyFriendEvents, "Only show events made by friends")}
+          <View style={{paddingLeft: 10, paddingTop: 14}}>
+            <Text style={{fontSize: 16, marginBottom: 10}}>Only show events for these groups:</Text>
+            <FlatList style={{backgroundColor: "#d6d6d6", borderRadius: 5, borderWidth: 1, borderColor: "#cccccc", padding: 5}} data={usersCtx.groups}
+                    renderItem={itemData => renderGroupSelect(itemData.item)} />
           </View>
-          
         </View>
       </View>
     </Modal>
@@ -229,6 +261,31 @@ export default function EventsScreen({ navigation, ...props }) {
     return <LoadingOverlay message="Loading events..." />
   }
 
+  function eventsList() {
+    let eventsToShow = eventsCtx.events;
+    if (hideRsvpdFilter) {
+      eventsToShow = eventsToShow.filter((e) => !e.rsvps.includes(myUid));
+    }
+    if (showOnlyFriendEvents) {
+      const friendUids = usersCtx.friends.map((f) => f.uid);
+      eventsToShow = eventsToShow.filter((e) => friendUids.includes(e.creatorUid));
+    }
+    if (filteredGroups.length > 0) {
+      console.log(filteredGroups);
+      console.log(eventsToShow);
+      eventsToShow = eventsToShow.filter((e) => e.invitedGroups?.some((g) => filteredGroups.includes(g)));
+    }
+    return (
+      <View style={styles.eventsContainer}>
+        {(eventsToShow.length === 0) && <Text style={styles.noEventText}>{past ? "No previous events." : "No upcoming events."}</Text>}
+          <FlatList style={{paddingVertical: 5}} contentContainerStyle={{paddingBottom: 10}} data={eventsToShow} renderItem={itemData => renderEvent(itemData.item)}
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={() => { getEvents(); }} />
+            } />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.rootContainer}>
       <Text style={styles.title}>{props?.route?.params?.title}</Text>
@@ -236,15 +293,8 @@ export default function EventsScreen({ navigation, ...props }) {
         {!past && <Button style={styles.createEvent} title="Create event" onPress={() => navigation.navigate("Create Event")} />}
         <Button style={{}} title="Filter events" onPress={() => setSelectingFilter(true)}/>
       </View>
-      
       <Text style={{paddingBottom: 5}}>Timezone: {timezone}</Text>
-      <View style={styles.eventsContainer}>
-        {(eventsCtx.events.length === 0) && <Text style={styles.noEventText}>There are currently no upcoming events. Create one to get started!</Text>}
-          <FlatList style={{paddingVertical: 5}} contentContainerStyle={{paddingBottom: 10}} data={eventsCtx.events} renderItem={itemData => renderEvent(itemData.item)}
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={() => { getEvents(); }} />
-            } />
-      </View>
+      {eventsList()}
       {rsvpOverlay()}
       {filterOverlay()}
     </View>
@@ -269,7 +319,6 @@ const styles = StyleSheet.create({
   },
   eventsContainer: {
     flex: 14,
-    paddingHorizontal: 28,
     borderColor: "grey",
     borderTopWidth: 3,
     borderBottomWidth: 0,
@@ -278,11 +327,14 @@ const styles = StyleSheet.create({
   noEventText: {
     color: "grey",
     textAlign: "center",
-    fontStyle: "italic"
+    fontStyle: "italic",
+    fontSize: 16,
+    marginTop: 20
   },
   rsvpdEvent: {
     marginVertical: 5,
     paddingHorizontal: 12,
+    marginHorizontal: 28,
     paddingVertical: 8,
     backgroundColor: "lightgreen",
     borderRadius: 15
@@ -290,6 +342,7 @@ const styles = StyleSheet.create({
   otherEvent: {
     marginVertical: 5,
     paddingHorizontal: 12,
+    marginHorizontal: 28,
     paddingVertical: 8,
     backgroundColor: "lightblue",
     borderRadius: 15
@@ -310,7 +363,7 @@ const styles = StyleSheet.create({
   eventDescription: {
     marginTop: 5
   },
-  eventRsvp: {
+  rsvpContainer: {
     fontStyle: "italic",
     marginTop: 5,
     fontWeight: "bold",
@@ -321,5 +374,10 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     overflow: "hidden",
     alignSelf: "flex-start"
+  },
+  rsvpText: {
+    fontStyle: "italic",
+    fontWeight: "bold",
+    color: "#001066",
   },
 });
