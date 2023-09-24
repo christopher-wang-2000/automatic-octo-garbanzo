@@ -234,7 +234,7 @@ export default function EventsScreen({ navigation, ...props }) {
           <ScrollView>
             <Text style={{fontSize: 16, fontWeight: "bold", marginTop: 10, marginBottom: 5}}>Invited groups you're in:</Text>
             {rsvpEvent?.friendsCanSee && <Text style={{fontSize: 16, marginBottom: 2, marginLeft: 5}}>{usersCtx.getUser(rsvpEvent?.creatorUid).firstName}'s friends</Text>}
-            {usersCtx.groups.filter((group: Group) => (group.members.includes(myUid) && rsvpEvent?.invitedGroups.includes(group.docId)))
+            {usersCtx.groups.filter((group: Group) => (group.members.includes(myUid) && rsvpEvent?.invitedGroups?.includes(group.docId)))
               .map((group: Group) => (
                 <Text key={group.docId} style={{fontSize: 16, marginBottom: 2, marginLeft: 5}}>{group.title}</Text>
             ))}
