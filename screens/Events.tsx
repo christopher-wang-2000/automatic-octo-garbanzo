@@ -8,6 +8,8 @@ import { getCalendars } from 'expo-localization';
 import RNCalendarEvents from "react-native-calendar-events";
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
+import { apiKey } from '../api_key';
+
 import { collection, query, where, getDocs, orderBy, doc, deleteDoc, updateDoc, Query, DocumentData, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
 import { db } from '../firebase';
 
@@ -92,7 +94,7 @@ export default function EventsScreen({ navigation, ...props }) {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${accessToken}`,
-                'X-goog-api-header': 'AIzaSyBu9aKJH7CmvYC1JatUN8uuUCAc7z9_jtI'
+                'X-goog-api-header': apiKey
             },
             body: JSON.stringify({
                 'start': { 'dateTime': event.startTime.toISOString() },
