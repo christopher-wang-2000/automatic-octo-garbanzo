@@ -6,6 +6,7 @@ import RNDateTimePicker from '@react-native-community/datetimepicker';
 import { DateTime } from "luxon";
 import { Event } from './Events';
 import Checkbox from 'expo-checkbox';
+import { Keyboard, TouchableWithoutFeedback } from 'react-native';
 
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
@@ -117,28 +118,30 @@ function CreateEventScreen({ navigation, ...props }) {
         return <LoadingOverlay message={loadingStatus}/>
     }
     return (
-        <View style={styles.rootContainer}>
-            <Input placeholder="Event title" defaultValue={title} onChangeText={setTitle} />
-            <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>Start time:</Text>
-                <RNDateTimePicker value={startTime} mode="datetime" onChange={(_, date) => setStartTime(date)} />
-            </View>
-            <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>End time:</Text>
-                <RNDateTimePicker value={endTime} mode="datetime" onChange={(_, date) => setEndTime(date)} />
-            </View>
-            <TextInput style={styles.eventDescription} placeholder="Enter a description here..."
-                multiline={true} numberOfLines={5} defaultValue={description} onChangeText={setDescription} />
-            <View style={{marginTop: 15, marginBottom: 15, flex: 10}}>
-                <Text style={{fontSize: 18, fontWeight: "bold"}}>Visible to:</Text>
-                <FlatList style={{borderColor: "gray", borderWidth: 1, padding: 5}} data={[undefined, ...usersCtx.groups]}
-                    renderItem={itemData => renderGroupSelect(itemData.item)} />
-            </View>
-            
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View style={styles.rootContainer}>
+                <Input placeholder="Event title" defaultValue={title} onChangeText={setTitle} />
+                <View style={styles.timeContainer}>
+                    <Text style={styles.timeText}>Start time:</Text>
+                    <RNDateTimePicker value={startTime} mode="datetime" onChange={(_, date) => setStartTime(date)} />
+                </View>
+                <View style={styles.timeContainer}>
+                    <Text style={styles.timeText}>End time:</Text>
+                    <RNDateTimePicker value={endTime} mode="datetime" onChange={(_, date) => setEndTime(date)} />
+                </View>
+                <TextInput style={styles.eventDescription} placeholder="Enter a description here..."
+                    multiline={true} numberOfLines={5} defaultValue={description} onChangeText={setDescription} />
+                <View style={{marginTop: 15, marginBottom: 15, flex: 10}}>
+                    <Text style={{fontSize: 18, fontWeight: "bold"}}>Visible to:</Text>
+                    <FlatList style={{borderColor: "gray", borderWidth: 1, padding: 5}} data={[undefined, ...usersCtx.groups]}
+                        renderItem={itemData => renderGroupSelect(itemData.item)} />
+                </View>
+                
 
-            {!event && <Button title="Create event" onPress={addEvent} />}
-            {event && <Button title="Update event" onPress={updateEvent} />}
-        </View>
+                {!event && <Button title="Create event" onPress={addEvent} />}
+                {event && <Button title="Update event" onPress={updateEvent} />}
+            </View>
+        </TouchableWithoutFeedback>
     );
 }
 

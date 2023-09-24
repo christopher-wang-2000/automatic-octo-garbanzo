@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>566822880515-htqgd1o219n75cto89c4k9105oq0qv4r.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.566822880515-htqgd1o219n75cto89c4k9105oq0qv4r</string>
+	<key>API_KEY</key>
+	<string>AIzaSyANPH3mrM7v5Y4biy6A2OoemYBPySZeftM</string>
+	<key>GCM_SENDER_ID</key>
+	<string>566822880515</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.chriswang.joinup</string>
+	<key>PROJECT_ID</key>
+	<string>socialtracker-d5908</string>
+	<key>STORAGE_BUCKET</key>
+	<string>socialtracker-d5908.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:566822880515:ios:f83f2686d105aa5ab31536</string>
+	<key>DATABASE_URL</key>
+	<string>https://socialtracker-d5908-default-rtdb.firebaseio.com</string>
+</dict>
+</plist>

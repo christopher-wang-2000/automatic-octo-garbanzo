@@ -4,12 +4,12 @@ import { Alert, StyleSheet, Text, View, TextInput, Button as TextButton } from '
 import { Button, Input } from 'react-native-elements'
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 
 import { auth } from '../firebase';
 import { collection, doc, addDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
-import { register } from './Auth';
 import LoadingOverlay from '../screens/LoadingOverlay';
 import { AuthContext } from '../store/auth-context';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
@@ -75,16 +75,18 @@ export default function Register({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
-        <Input placeholder="Email address" onChangeText={setEnteredEmail}/>
-        <Input placeholder="First name" onChangeText={setEnteredFirstName}/>
-        <Input placeholder="Last name" onChangeText={setEnteredLastName}/>
-        <Input placeholder="Password" onChangeText={setEnteredPassword} secureTextEntry={true}/>
-        <Input placeholder="Confirm password" onChangeText={setEnteredConfirmPassword} secureTextEntry={true}/>
-        <Button title="Register account" onPress={() =>
-          registerHandler(enteredEmail, enteredFirstName, enteredLastName, enteredPassword, enteredConfirmPassword)}/>
-        <TextButton title="Sign in with existing account" onPress={() => navigation.navigate("Login")} />
-    </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={styles.container}>
+          <Input placeholder="Email address" onChangeText={setEnteredEmail}/>
+          <Input placeholder="First name" onChangeText={setEnteredFirstName}/>
+          <Input placeholder="Last name" onChangeText={setEnteredLastName}/>
+          <Input placeholder="Password" onChangeText={setEnteredPassword} secureTextEntry={true}/>
+          <Input placeholder="Confirm password" onChangeText={setEnteredConfirmPassword} secureTextEntry={true}/>
+          <Button title="Register account" onPress={() =>
+            registerHandler(enteredEmail, enteredFirstName, enteredLastName, enteredPassword, enteredConfirmPassword)}/>
+          <TextButton title="Sign in with existing account" onPress={() => navigation.navigate("Login")} />
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 

@@ -20,12 +20,12 @@ function WelcomeScreen({ navigation }) {
             <Button style={styles.button} title="Past events" onPress={() => navigation.navigate("Events", { title: "Past events", past: true })}></Button>
             <Button style={styles.button} title="My friends" onPress={() => navigation.navigate("My Friends")} />
             <Button style={styles.button} title="My groups" onPress={() => navigation.navigate("My Groups")} />
-            {!googleLoginInfo && <GoogleSigninButton style={styles.button} onPress={async () => setGoogleLoginInfo(await authCtx.googleLogin())} />}
+            {/* {!googleLoginInfo && <GoogleSigninButton style={styles.button} onPress={async () => setGoogleLoginInfo(await authCtx.googleLogin())} />}
             {googleLoginInfo && <Button style={styles.button} title="Log out of Google" onPress={async () => {
               if (await authCtx.googleLogout()) {
                 setGoogleLoginInfo(null);
               }
-            }} />}
+            }} />} */}
         </View>
     );
 }

@@ -10,6 +10,7 @@ import { AuthContext } from '../store/auth-context';
 import { EventsContext } from '../store/events-context';
 import { UsersContext } from '../store/users-context';
 import LoadingOverlay from './LoadingOverlay';
+import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 
 import { Friend, FriendStatus } from '../utils/friend';
 import { Group } from '../utils/group';
@@ -62,22 +63,24 @@ export default function CreateGroupScreen({ navigation }) {
         return <LoadingOverlay message={loadingMessage} />
     }
     return (
-        <View style={styles.rootContainer}>
-            <Input placeholder="Group name" defaultValue={title} onChangeText={setTitle} />
-            <View style={{paddingBottom: 15, flexDirection: "row", alignItems: "center"}}>
-                <Text style={{flex: 1, fontSize: 16}}>All members can add and remove</Text>
-                <Switch value={anyoneCanEdit} onValueChange={setAnyoneCanEdit} />
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View style={styles.rootContainer}>
+                <Input placeholder="Group name" defaultValue={title} onChangeText={setTitle} />
+                <View style={{paddingBottom: 15, flexDirection: "row", alignItems: "center"}}>
+                    <Text style={{flex: 1, fontSize: 16}}>All members can add and remove</Text>
+                    <Switch value={anyoneCanEdit} onValueChange={setAnyoneCanEdit} />
+                </View>
+                <View style={{paddingBottom: 20, flexDirection: "row", alignItems: "center"}}>
+                    <Text style={{flex: 1, fontSize: 16}}>Make group private</Text>
+                    <Switch value={isPrivate} onValueChange={setIsPrivate} />
+                </View>
+                <Text style={{fontSize: 18, fontWeight: "bold"}}>Add friends:</Text>
+                <View style={styles.friendsContainer}>
+                    <FlatList data={usersCtx.friends} renderItem={itemData => renderFriendSelect(itemData.item)} />
+                </View>
+                <Button title="Create" style={{marginBottom: 15}} onPress={create} />
             </View>
-            <View style={{paddingBottom: 20, flexDirection: "row", alignItems: "center"}}>
-                <Text style={{flex: 1, fontSize: 16}}>Make group private</Text>
-                <Switch value={isPrivate} onValueChange={setIsPrivate} />
-            </View>
-            <Text style={{fontSize: 18, fontWeight: "bold"}}>Add friends:</Text>
-            <View style={styles.friendsContainer}>
-                <FlatList data={usersCtx.friends} renderItem={itemData => renderFriendSelect(itemData.item)} />
-            </View>
-            <Button title="Create" style={{marginBottom: 15}} onPress={create} />
-        </View>
+        </TouchableWithoutFeedback>
     );
 }
 

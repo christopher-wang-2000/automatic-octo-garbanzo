@@ -4,8 +4,8 @@ import { Alert, StyleSheet, Text, View, TextInput, Button as TextButton } from '
 import { Button, Input } from 'react-native-elements'
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 
-import { login } from './Auth';
 import { auth } from '../firebase';
 import LoadingOverlay from '../screens/LoadingOverlay';
 import { AuthContext } from '../store/auth-context';
@@ -25,10 +25,8 @@ export default function Login({ navigation }) {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const token = await userCredential.user.getIdToken();
-      // const { token, uid } = await login(email, password);
       setIsAuthenticating(false);
       authCtx.authenticate(token, email, userCredential.user.uid);
-      console.log("hello!");
     }
     catch (error) {
       console.log(error.response);
@@ -42,12 +40,14 @@ export default function Login({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
-        <Input placeholder="Email address" onChangeText={setEnteredEmail}/>
-        <Input placeholder="Password" onChangeText={setEnteredPassword} secureTextEntry={true}/>
-        <Button title="Log in" onPress={() => loginHandler(enteredEmail, enteredPassword)} />
-        <TextButton title="Don't have an account? Register here" onPress={() => navigation.navigate("Register")} />
-    </View>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={styles.container}>
+          <Input placeholder="Email address" onChangeText={setEnteredEmail}/>
+          <Input placeholder="Password" onChangeText={setEnteredPassword} secureTextEntry={true}/>
+          <Button title="Log in" onPress={() => loginHandler(enteredEmail, enteredPassword)} />
+          <TextButton title="Don't have an account? Register here" onPress={() => navigation.navigate("Register")} />
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 

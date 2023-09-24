@@ -4,6 +4,7 @@ import { Input, Button } from 'react-native-elements';
 import { collection, query, where, getDocs, orderBy, doc, addDoc, updateDoc, getDoc, deleteDoc, QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 
 import { db } from '../firebase';
 import { AuthContext } from '../store/auth-context';
@@ -150,18 +151,20 @@ export default function MyFriendsScreen({ navigation }) {
     }
 
     return (
-        <View style={styles.rootContainer}>
-            <Text style={styles.title}>My Friends</Text>
-            <View style={styles.addFriend}>
-                <Input placeholder="Enter email here" onChangeText={setNewFriendEmail} />
-                <Button title="Add friend" onPress={add} />
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            <View style={styles.rootContainer}>
+                <Text style={styles.title}>My Friends</Text>
+                <View style={styles.addFriend}>
+                    <Input placeholder="Enter email here" onChangeText={setNewFriendEmail} />
+                    <Button title="Add friend" onPress={add} />
+                </View>
+                <View style={styles.friendsContainer}>
+                    <FlatList data={usersCtx.friends} renderItem={itemData => renderFriend(itemData.item)}
+                        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { loadFriendsAndRefresh(); }} />}
+                        />
+                </View>
             </View>
-            <View style={styles.friendsContainer}>
-                <FlatList data={usersCtx.friends} renderItem={itemData => renderFriend(itemData.item)}
-                    refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { loadFriendsAndRefresh(); }} />}
-                    />
-            </View>
-        </View>
+        </TouchableWithoutFeedback>
     );
 }
 

@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "566822880515",
+    "firebase_url": "https://socialtracker-d5908-default-rtdb.firebaseio.com",
+    "project_id": "socialtracker-d5908",
+    "storage_bucket": "socialtracker-d5908.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:566822880515:android:f01a38841a8984f1b31536",
+        "android_client_info": {
+          "package_name": "com.chriswang.joinup"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "566822880515-0nnr6elb3q5l0d4v9eu7ujo4spqf6mfn.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCQcWRNS5xZcn2pJYGetDA1mgLZBMYnrCo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "566822880515-0nnr6elb3q5l0d4v9eu7ujo4spqf6mfn.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
