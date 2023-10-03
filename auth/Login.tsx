@@ -6,7 +6,7 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 
-import { auth, provider } from '../firebase';
+import { auth } from '../firebase';
 import LoadingOverlay from '../screens/LoadingOverlay';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
 import { GoogleSignin, GoogleSigninButton } from '@react-native-google-signin/google-signin';
