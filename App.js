@@ -19,12 +19,14 @@ import UsersContextProvider from './store/users-context';
 import WelcomeScreen from './screens/Home';
 import EventsScreen from './screens/Events';
 import CreateEventScreen from './screens/CreateEvent';
+import MapScreen from './screens/Map';
 import MyFriendsScreen from './screens/Friends';
 import MyGroupsScreen from './screens/Groups';
 import CreateGroupScreen from './screens/CreateGroup';
 import LoadingOverlay from './screens/LoadingOverlay';
 
 import { LogBox } from 'react-native';
+import SettingsScreen from './screens/Settings';
 
 LogBox.ignoreLogs([
   'Non-serializable values were found in the navigation state',
@@ -96,11 +98,12 @@ function GroupsStackScreen() {
 const Tab = createBottomTabNavigator();
 function MyTabs() {
   return (
-    <Tab.Navigator screenOptions={{unmountOnBlur: true}}>
-      <Tab.Screen name="Welcome" component={WelcomeScreen} options={{unmountOnBlur: false}} />
+    <Tab.Navigator initialRouteName="Events" screenOptions={{unmountOnBlur: true}}>
       <Tab.Screen name="Events" component={EventsStackScreen} options={{headerShown: false, unmountOnBlur: false}} />
+      <Tab.Screen name="Map" component={MapScreen} options={{unmountOnBlur: false}} />
       <Tab.Screen name="Friends" component={MyFriendsScreen} options={{unmountOnBlur: false}} />
       <Tab.Screen name="Groups" component={GroupsStackScreen} options={{headerShown: false, unmountOnBlur: false}} />
+      <Tab.Screen name="Settings" component={SettingsScreen} options={{unmountOnBlur: false}} />
     </Tab.Navigator>
   );
 }
