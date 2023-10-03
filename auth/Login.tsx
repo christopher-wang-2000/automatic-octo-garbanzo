@@ -6,9 +6,10 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 
-import { auth } from '../firebase';
+import { auth, provider } from '../firebase';
 import LoadingOverlay from '../screens/LoadingOverlay';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithCredential } from 'firebase/auth';
+import { GoogleSignin, GoogleSigninButton } from '@react-native-google-signin/google-signin';
 
 export default function Login({ navigation }) {
   const [enteredEmail, setEnteredEmail] = useState('');
@@ -16,9 +17,8 @@ export default function Login({ navigation }) {
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   async function loginHandler(email: string, password: string) {
-    email = email.trim().toLowerCase();
     setIsAuthenticating(true);
-
+    email = email.trim().toLowerCase();
     try {
       console.log("HELLO ", auth.currentUser?.email);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
@@ -32,6 +32,14 @@ export default function Login({ navigation }) {
     }
   }
 
+  async function signInWithGoogle() {
+    const { idToken } = await GoogleSignin.signIn();
+    setIsAuthenticating(true);
+    const googleCredential = GoogleAuthProvider.credential(idToken);
+    await signInWithCredential(auth, googleCredential);
+    setIsAuthenticating(false);
+  }
+
   if (isAuthenticating) {
     return <LoadingOverlay message="Logging in.." />;
   }
@@ -42,6 +50,8 @@ export default function Login({ navigation }) {
           <Input placeholder="Email address" onChangeText={setEnteredEmail}/>
           <Input placeholder="Password" onChangeText={setEnteredPassword} secureTextEntry={true}/>
           <Button title="Log in" onPress={() => loginHandler(enteredEmail, enteredPassword)} />
+          <Text style={{margin: 5, color: "gray"}}>or</Text>
+          <GoogleSigninButton onPress={() => signInWithGoogle()} />
           <TextButton title="Don't have an account? Register here" onPress={() => navigation.navigate("Register")} />
       </View>
     </TouchableWithoutFeedback>

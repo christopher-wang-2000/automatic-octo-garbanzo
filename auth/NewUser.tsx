@@ -10,7 +10,8 @@ import { db, auth } from '../firebase';
 import { collection, doc, addDoc, setDoc } from 'firebase/firestore';
 
 import LoadingOverlay from '../screens/LoadingOverlay';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithCredential, GoogleAuthProvider } from 'firebase/auth';
+import { GoogleSignin, GoogleSigninButton } from '@react-native-google-signin/google-signin';
 
 export default function Register({ navigation }) {
   const [enteredEmail, setEnteredEmail] = useState('');
@@ -65,6 +66,14 @@ export default function Register({ navigation }) {
     }
   }
 
+  async function signInWithGoogle() {
+    const { idToken } = await GoogleSignin.signIn();
+    setIsAuthenticating(true);
+    const googleCredential = GoogleAuthProvider.credential(idToken);
+    await signInWithCredential(auth, googleCredential);
+    setIsAuthenticating(false);
+  }
+
   if (isAuthenticating) {
     return <LoadingOverlay message="Creating user..." />;
   }
@@ -79,6 +88,8 @@ export default function Register({ navigation }) {
           <Input placeholder="Confirm password" onChangeText={setEnteredConfirmPassword} secureTextEntry={true}/>
           <Button title="Register account" onPress={() =>
             registerHandler(enteredEmail, enteredFirstName, enteredLastName, enteredPassword, enteredConfirmPassword)}/>
+          <Text style={{margin: 5, color: "gray"}}>or</Text>
+          <GoogleSigninButton onPress={() => signInWithGoogle()} />
           <TextButton title="Sign in with existing account" onPress={() => navigation.navigate("Login")} />
       </View>
     </TouchableWithoutFeedback>

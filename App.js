@@ -4,7 +4,7 @@ import { Button, Input } from 'react-native-elements'
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { MenuProvider } from 'react-native-popup-menu';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
@@ -42,24 +42,6 @@ export default function App() {
     </MenuProvider>
   );
 }
-
-// function Root() {
-//   const [isTryingLogin, setIsTryingLogin] = useState(true);
-//   const authCtx = useContext(AuthContext);
-
-//   useEffect(async () => {
-//     const storedToken = await AsyncStorage.getItem('token')
-//       if (storedToken) {
-//           authCtx.authenticate(storedToken);
-//       }
-//       setIsTryingLogin(false);
-//     });
-
-//   if (isTryingLogin) {
-//     return <AppLoading />
-//   }
-//   return <Navigation />
-// }
 
 function Navigation() {
   const [isLoading, setIsLoading] = useState(true);
