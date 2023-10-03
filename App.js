@@ -4,6 +4,7 @@ import { Button, Input } from 'react-native-elements'
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useContext, useEffect, useState } from 'react';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 
 import { MenuProvider } from 'react-native-popup-menu';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -65,10 +66,42 @@ function Navigation() {
 
 function AuthStack() {
   return (
-    <Stack.Navigator>
+    <Stack.Navigator >
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Register" component={Register} />
     </Stack.Navigator>
+  );
+}
+
+const EventsStack = createNativeStackNavigator();
+function EventsStackScreen() {
+  return (
+    <EventsStack.Navigator initialRouteName="My Events" >
+      <EventsStack.Screen name="My Events" component={EventsScreen} />
+      <EventsStack.Screen name="Create Event" component={CreateEventScreen} />
+    </EventsStack.Navigator>
+  );
+}
+
+const GroupsStack = createNativeStackNavigator();
+function GroupsStackScreen() {
+  return (
+    <GroupsStack.Navigator initialRouteName="My Groups" >
+      <GroupsStack.Screen name="My Groups" component={MyGroupsScreen} />
+      <GroupsStack.Screen name="Create Group" component={CreateGroupScreen} />
+    </GroupsStack.Navigator>
+  );
+}
+
+const Tab = createBottomTabNavigator();
+function MyTabs() {
+  return (
+    <Tab.Navigator screenOptions={{unmountOnBlur: true}}>
+      <Tab.Screen name="Welcome" component={WelcomeScreen} options={{unmountOnBlur: false}} />
+      <Tab.Screen name="Events" component={EventsStackScreen} options={{headerShown: false, unmountOnBlur: false}} />
+      <Tab.Screen name="Friends" component={MyFriendsScreen} options={{unmountOnBlur: false}} />
+      <Tab.Screen name="Groups" component={GroupsStackScreen} options={{headerShown: false, unmountOnBlur: false}} />
+    </Tab.Navigator>
   );
 }
 
@@ -76,7 +109,7 @@ function AuthenticatedStack() {
   return (
     <UsersContextProvider>
       <EventsContextProvider>
-        <Stack.Navigator
+        {/* <Stack.Navigator
           screenOptions={{
             headerStyle: { },
             contentStyle: { },
@@ -89,7 +122,8 @@ function AuthenticatedStack() {
           <Stack.Screen name="My Friends" component={MyFriendsScreen} />
           <Stack.Screen name="My Groups" component={MyGroupsScreen} />
           <Stack.Screen name="Create Group" component={CreateGroupScreen} />
-        </Stack.Navigator>
+        </Stack.Navigator> */}
+        <MyTabs />
       </EventsContextProvider>
     </UsersContextProvider>
   );

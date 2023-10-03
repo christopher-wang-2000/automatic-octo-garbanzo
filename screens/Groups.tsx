@@ -28,6 +28,7 @@ export default function MyGroupsScreen({ navigation }) {
     useEffect(() => {
         async function loadGroupsOnOpen() {
             setLoadingMessage("Loading groups...");
+            await usersCtx.loadFriends(myUid);
             await refreshGroups();
             setLoadingMessage("");
         }

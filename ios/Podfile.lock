@@ -1283,7 +1283,7 @@ PODS:
   - RNFBApp (18.5.0):
     - Firebase/CoreOnly (= 10.15.0)
     - React-Core
-  - RNFBFirestore (18.4.0):
+  - RNFBFirestore (18.5.0):
     - Firebase/Firestore (= 10.15.0)
     - nanopb (< 2.30910.0, >= 2.30908.0)
     - React-Core
@@ -1615,7 +1615,7 @@ SPEC CHECKSUMS:
   RNCCheckbox: 75255b03e604bbcc26411eb31c4cbe3e3865f538
   RNDateTimePicker: 3942382593f104af226ad9c56e16166960c7ae30
   RNFBApp: cc9384746945ac0eedd4759171a8abb4c4c5309d
-  RNFBFirestore: a60e6005e071b31360a5bf651eb403b36c7db7de
+  RNFBFirestore: efd8996a791bb9edbd0a3b3acfd80d7a60d9a1d9
   RNGoogleSignin: ccaa4a81582cf713eea562c5dd9dc1961a715fd0
   RNScreens: 50ffe2fa2342eabb2d0afbe19f7c1af286bc7fb3
   SocketRocket: f32cd54efbe0f095c4d7594881e52619cfe80b17
