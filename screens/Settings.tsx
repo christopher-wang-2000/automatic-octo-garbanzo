@@ -1,24 +1,16 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from 'react-native-elements';
-import { CommonActions } from '@react-navigation/native';
 
 import { db, auth } from '../firebase';
-import { GoogleSignin, GoogleSigninButton } from '@react-native-google-signin/google-signin';
 
-export default function WelcomeScreen({ navigation }) {
+export default function SettingsScreen({ navigation }) {
     const myUid: string = auth.currentUser.uid;
     const [googleLoginInfo, setGoogleLoginInfo] = useState(undefined);
     
     return (
         <View style={styles.rootContainer}>
-            <Text style={styles.title}>Welcome to Join.up!</Text>
             <Text style={{marginBottom: 10}}>Logged in as: {auth.currentUser.email}</Text>
-            <Button style={styles.button} title="Upcoming events" onPress={() => navigation.navigate("Events", { title: "Upcoming events" })}></Button>
-            {/* <Button style={styles.button} title="Events I'm going to" onPress={() => navigation.navigate("Events", { title: "Events I'm going to", rsvpdOnly: true })}></Button> */}
-            <Button style={styles.button} title="Past events" onPress={() => navigation.navigate("Events", { title: "Past events", past: true })}></Button>
-            <Button style={styles.button} title="My friends" onPress={() => navigation.navigate("Friends")} />
-            <Button style={styles.button} title="My groups" onPress={() => navigation.navigate("Groups")} />
             <Button style={styles.button} title="Log out" onPress={() => auth.signOut()} />
             {/* {!googleLoginInfo && <GoogleSigninButton style={styles.button} onPress={async () => setGoogleLoginInfo(await authCtx.googleLogin())} />}
             {googleLoginInfo && <Button style={styles.button} title="Log out of Google" onPress={async () => {

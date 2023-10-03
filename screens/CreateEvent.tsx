@@ -8,14 +8,17 @@ import { Event } from './Events';
 import Checkbox from 'expo-checkbox';
 import { Keyboard, TouchableWithoutFeedback } from 'react-native';
 
+import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
+
 import { db, auth } from '../firebase';
 import { UsersContext } from '../store/users-context';
 import { EventsContext } from '../store/events-context';
 import LoadingOverlay from './LoadingOverlay';
 import { createEventFromDoc } from './Events';
 import { Group } from '../utils/group';
+import { googleApiKey } from '../api_key';
 
-function CreateEventScreen({ navigation, ...props }) {
+export default function CreateEventScreen({ navigation, ...props }) {
     const usersCtx = useContext(UsersContext);
     const eventsCtx = useContext(EventsContext);
 
@@ -95,11 +98,13 @@ function CreateEventScreen({ navigation, ...props }) {
         }
         const checked: boolean = group ? invitedGroups?.includes(group.docId) : friendsCanSee;
         return (
-            <View style={{flexDirection: "row", borderColor: "#D4D4D4", borderWidth: 1, backgroundColor: "white", borderRadius: 20, padding: 12, margin: 5, alignItems: "center" }}>
-                <Text style={{flex: 1, marginLeft: 15, fontSize: 16}}>{title}</Text>
-                <Checkbox style={{borderRadius: 5}} value={checked}
-                    onValueChange={(checked) => (group ? onPressGroup(checked) : onPressFriends(checked))} />
-            </View>
+            <TouchableWithoutFeedback>
+                <View style={{flexDirection: "row", borderColor: "#D4D4D4", borderWidth: 1, backgroundColor: "white", borderRadius: 20, padding: 12, margin: 5, alignItems: "center" }}>
+                    <Text style={{flex: 1, marginLeft: 15, fontSize: 16}}>{title}</Text>
+                    <Checkbox style={{borderRadius: 5}} value={checked}
+                        onValueChange={(checked) => (group ? onPressGroup(checked) : onPressFriends(checked))} />
+                </View>
+            </TouchableWithoutFeedback>
         )
     }
 
@@ -127,10 +132,23 @@ function CreateEventScreen({ navigation, ...props }) {
                     <Text style={styles.timeText}>End time:</Text>
                     <RNDateTimePicker value={endTime} mode="datetime" onChange={(_, date) => setEndTime(date)} />
                 </View>
+                <View style={{flex: 1, zIndex: 10}}>
+                    <GooglePlacesAutocomplete
+                        placeholder="Meeting location"
+                        onPress={(data, details = null) => {
+                            // 'details' is provided when fetchDetails = true
+                            console.log(data, details);
+                        }}
+                        query={{
+                            key: googleApiKey,
+                            language: 'en',
+                        }}
+                    />
+                </View>
                 <TextInput style={styles.eventDescription} placeholder="Enter a description here..."
                     multiline={true} numberOfLines={5} defaultValue={description} onChangeText={setDescription} />
                 <View style={{marginTop: 15, marginBottom: 15, flex: 10}}>
-                    <Text style={{fontSize: 18, fontWeight: "bold"}}>Visible to:</Text>
+                    <Text style={{fontSize: 18}}>Share with:</Text>
                     <FlatList style={{borderColor: "gray", borderWidth: 1, padding: 5}} data={[undefined, ...usersCtx.groups]}
                         renderItem={itemData => renderGroupSelect(itemData.item)} />
                 </View>
@@ -142,8 +160,6 @@ function CreateEventScreen({ navigation, ...props }) {
         </TouchableWithoutFeedback>
     );
 }
-
-export default CreateEventScreen;
 
 const styles = StyleSheet.create({
     rootContainer: {
