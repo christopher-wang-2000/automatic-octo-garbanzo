@@ -162,8 +162,6 @@
 			dependencies = (
 			);
 			name = JoinUp;
-			packageProductDependencies = (
-			);
 			productName = JoinUp;
 			productReference = 13B07F961A680F5B00A75B9A /* JoinUp.app */;
 			productType = "com.apple.product-type.application";
@@ -190,8 +188,6 @@
 				Base,
 			);
 			mainGroup = 83CBB9F61A601CBA00E9B192;
-			packageReferences = (
-			);
 			productRefGroup = 83CBBA001A601CBA00E9B192 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";

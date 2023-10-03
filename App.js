@@ -3,9 +3,8 @@ import { StyleSheet, Text, View, TextInput, Button as TextButton } from 'react-n
 import { Button, Input } from 'react-native-elements'
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import AppLoading from 'expo-app-loading';
 import { MenuProvider } from 'react-native-popup-menu';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
@@ -13,10 +12,8 @@ import Login from './auth/Login';
 import Register from './auth/NewUser';
 import { auth } from './firebase';
 
-import AuthContextProvider from './store/auth-context'
 import EventsContextProvider from './store/events-context';
 import UsersContextProvider from './store/users-context';
-import { AuthContext } from './store/auth-context';
 
 import WelcomeScreen from './screens/Home';
 import EventsScreen from './screens/Events';
@@ -24,6 +21,7 @@ import CreateEventScreen from './screens/CreateEvent';
 import MyFriendsScreen from './screens/Friends';
 import MyGroupsScreen from './screens/Groups';
 import CreateGroupScreen from './screens/CreateGroup';
+import LoadingOverlay from './screens/LoadingOverlay';
 
 import { LogBox } from 'react-native';
 
@@ -39,38 +37,46 @@ export default function App() {
     webClientId: '566822880515-htqgd1o219n75cto89c4k9105oq0qv4r.apps.googleusercontent.com',
   });
   return (
-    <AuthContextProvider>
-      <MenuProvider>
-        <Navigation />
-      </MenuProvider>
-    </AuthContextProvider>
+    <MenuProvider>
+      <Navigation />
+    </MenuProvider>
   );
 }
 
-function Root() {
-  const [isTryingLogin, setIsTryingLogin] = useState(true);
-  const authCtx = useContext(AuthContext);
+// function Root() {
+//   const [isTryingLogin, setIsTryingLogin] = useState(true);
+//   const authCtx = useContext(AuthContext);
 
-  useEffect(async () => {
-    const storedToken = await AsyncStorage.getItem('token')
-      if (storedToken) {
-          authCtx.authenticate(storedToken);
-      }
-      setIsTryingLogin(false);
-    });
+//   useEffect(async () => {
+//     const storedToken = await AsyncStorage.getItem('token')
+//       if (storedToken) {
+//           authCtx.authenticate(storedToken);
+//       }
+//       setIsTryingLogin(false);
+//     });
 
-  if (isTryingLogin) {
-    return <AppLoading />
-  }
-  return <Navigation />
-}
+//   if (isTryingLogin) {
+//     return <AppLoading />
+//   }
+//   return <Navigation />
+// }
 
 function Navigation() {
-  const authCtx = useContext(AuthContext);
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  useEffect(() => {
+    async function loadInitialAuth() {
+      await auth.authStateReady();
+      setIsLoading(false);
+    }
+    loadInitialAuth();
+  }, []);
+  auth.onAuthStateChanged((user) => setUser(user));
   return (
     <NavigationContainer>
-      {!authCtx.isAuthenticated && <AuthStack />}
-      {authCtx.isAuthenticated && <AuthenticatedStack />}
+      {isLoading && <LoadingOverlay message="Loading user..." />}
+      {(!isLoading && !user) && <AuthStack />}
+      {(!isLoading && user) && <AuthenticatedStack />}
     </NavigationContainer>
   );
 }
@@ -85,7 +91,6 @@ function AuthStack() {
 }
 
 function AuthenticatedStack() {
-  const authCtx = useContext(AuthContext);
   return (
     <UsersContextProvider>
       <EventsContextProvider>
@@ -96,7 +101,7 @@ function AuthenticatedStack() {
           }}
         >
           <Stack.Screen name="Welcome" component={WelcomeScreen} options={{
-            headerRight: () => <TextButton title="Log out" onPress={authCtx.logout} />}} />
+            headerRight: () => <TextButton title="Log out" onPress={() => { auth.signOut(); }} />}} />
           <Stack.Screen name="Events" component={EventsScreen} />
           <Stack.Screen name="Create Event" component={CreateEventScreen} />
           <Stack.Screen name="My Friends" component={MyFriendsScreen} />

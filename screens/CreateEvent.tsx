@@ -8,8 +8,7 @@ import { Event } from './Events';
 import Checkbox from 'expo-checkbox';
 import { Keyboard, TouchableWithoutFeedback } from 'react-native';
 
-import { db } from '../firebase';
-import { AuthContext } from '../store/auth-context';
+import { db, auth } from '../firebase';
 import { UsersContext } from '../store/users-context';
 import { EventsContext } from '../store/events-context';
 import LoadingOverlay from './LoadingOverlay';
@@ -17,11 +16,10 @@ import { createEventFromDoc } from './Events';
 import { Group } from '../utils/group';
 
 function CreateEventScreen({ navigation, ...props }) {
-    const authCtx = useContext(AuthContext);
     const usersCtx = useContext(UsersContext);
     const eventsCtx = useContext(EventsContext);
 
-    const myUid = authCtx.uid;
+    const myUid = auth.currentUser.uid;
     const event = props?.route?.params?.event;
 
     const [title, setTitle] = useState(event ? event.title : "");
@@ -46,8 +44,8 @@ function CreateEventScreen({ navigation, ...props }) {
                     startTime,
                     endTime,
                     description,
-                    uid: authCtx.uid,
-                    rsvps: [authCtx.uid],
+                    uid: myUid,
+                    rsvps: [myUid],
                     friendsCanSee,
                     invitedGroups
                 });

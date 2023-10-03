@@ -2,19 +2,17 @@ import React, { useContext, useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Button } from 'react-native-elements';
 
-import { db } from '../firebase';
-import { AuthContext } from '../store/auth-context';
+import { db, auth } from '../firebase';
 import { GoogleSignin, GoogleSigninButton } from '@react-native-google-signin/google-signin';
 
 function WelcomeScreen({ navigation }) {
-    const authCtx = useContext(AuthContext);
-    const myUid: string = authCtx.uid;
+    const myUid: string = auth.currentUser.uid;
     const [googleLoginInfo, setGoogleLoginInfo] = useState(undefined);
     
     return (
         <View style={styles.rootContainer}>
             <Text style={styles.title}>Welcome to Join.up!</Text>
-            <Text style={{marginBottom: 10}}>Logged in as: {authCtx.email}</Text>
+            <Text style={{marginBottom: 10}}>Logged in as: {auth.currentUser.email}</Text>
             <Button style={styles.button} title="Upcoming events" onPress={() => navigation.navigate("Events", { title: "Upcoming events" })}></Button>
             {/* <Button style={styles.button} title="Events I'm going to" onPress={() => navigation.navigate("Events", { title: "Events I'm going to", rsvpdOnly: true })}></Button> */}
             <Button style={styles.button} title="Past events" onPress={() => navigation.navigate("Events", { title: "Past events", past: true })}></Button>

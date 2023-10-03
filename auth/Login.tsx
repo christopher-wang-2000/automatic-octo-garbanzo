@@ -8,7 +8,6 @@ import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 
 import { auth } from '../firebase';
 import LoadingOverlay from '../screens/LoadingOverlay';
-import { AuthContext } from '../store/auth-context';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 
 export default function Login({ navigation }) {
@@ -16,17 +15,15 @@ export default function Login({ navigation }) {
   const [enteredPassword, setEnteredPassword] = useState('');
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  const authCtx = useContext(AuthContext);
-
   async function loginHandler(email: string, password: string) {
     email = email.trim().toLowerCase();
     setIsAuthenticating(true);
 
     try {
+      console.log("HELLO ", auth.currentUser?.email);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const token = await userCredential.user.getIdToken();
+      console.log("GOODBYE ", auth.currentUser?.email);
       setIsAuthenticating(false);
-      authCtx.authenticate(token, email, userCredential.user.uid);
     }
     catch (error) {
       console.log(error.response);

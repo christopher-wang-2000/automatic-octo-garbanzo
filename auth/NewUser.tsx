@@ -6,12 +6,10 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 
-import { auth } from '../firebase';
+import { db, auth } from '../firebase';
 import { collection, doc, addDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
 
 import LoadingOverlay from '../screens/LoadingOverlay';
-import { AuthContext } from '../store/auth-context';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 export default function Register({ navigation }) {
@@ -22,7 +20,6 @@ export default function Register({ navigation }) {
   const [enteredConfirmPassword, setEnteredConfirmPassword] = useState('');
 
   const [isAuthenticating, setIsAuthenticating] = useState(false);
-  const authCtx = useContext(AuthContext);
 
   async function registerHandler(email: string, firstName: string, lastName: string, password: string, confirmPassword: string) {
     email = email.trim().toLowerCase();
@@ -53,14 +50,12 @@ export default function Register({ navigation }) {
 
       try {
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        // const { token, uid } = await register(email, password);
-        // await setDoc(doc(db, "users", uid),
-        //   { uid, email, firstName, lastName, fullName: firstName + " " + lastName });
-        // authCtx.authenticate(token, email, uid);
-        const token = await userCredential.user.getIdToken();
-        // const { token, uid } = await login(email, password);
+        const uid = userCredential.user.uid;
+        const tokenPromise = userCredential.user.getIdToken();
+        await setDoc(doc(db, "users", uid),
+          { uid, email, firstName, lastName, fullName: firstName + " " + lastName });
+          const token = await tokenPromise;
         setIsAuthenticating(false);
-        authCtx.authenticate(token, email, userCredential.user.uid);
       }
       catch (error) {
         console.log(error.response);

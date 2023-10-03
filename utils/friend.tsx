@@ -4,6 +4,7 @@ import { db } from '../firebase';
 export enum FriendStatus { Incoming, Accepted, Outgoing };
 
 export type Friend = { docId: string, uid: string, status: FriendStatus }
+export const dummyFriend: Friend = { docId: null, uid: null, status: null }
 
 export function createFriendFromDocument(
     friendDoc: QueryDocumentSnapshot<DocumentData, DocumentData>,

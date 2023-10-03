@@ -6,8 +6,7 @@ import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-m
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { TouchableWithoutFeedback, Keyboard } from 'react-native';
 
-import { db } from '../firebase';
-import { AuthContext } from '../store/auth-context';
+import { db, auth } from '../firebase';
 import { UsersContext } from '../store/users-context';
 import LoadingOverlay from './LoadingOverlay';
 
@@ -15,9 +14,8 @@ import { User } from '../utils/user';
 import { FriendStatus, Friend } from '../utils/friend';
 
 export default function MyFriendsScreen({ navigation }) {
-    const authCtx = useContext(AuthContext);
     const usersCtx = useContext(UsersContext);
-    const myUid = authCtx.uid;
+    const myUid: string = auth.currentUser.uid;
 
     useEffect(() => {
         async function addEvent() {

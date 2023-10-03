@@ -11,9 +11,8 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { apiKey } from '../api_key';
 
 import { collection, query, where, getDocs, orderBy, doc, deleteDoc, updateDoc, Query, DocumentData, arrayUnion, arrayRemove, Timestamp } from "firebase/firestore";
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 
-import { AuthContext } from '../store/auth-context';
 import { EventsContext } from '../store/events-context';
 import { UsersContext } from '../store/users-context';
 
@@ -54,7 +53,6 @@ export function createEventFromDoc(document: DocumentData) {
 }
 
 export default function EventsScreen({ navigation, ...props }) {
-  const authCtx = useContext(AuthContext);
   const eventsCtx = useContext(EventsContext);
   const usersCtx = useContext(UsersContext);
 
@@ -72,7 +70,7 @@ export default function EventsScreen({ navigation, ...props }) {
   const past = (props?.route?.params?.past === true);
   const rsvpdOnly = (props?.route?.params?.rsvpdOnly === true);
 
-  const myUid: string = authCtx.uid;
+  const myUid: string = auth.currentUser.uid;
 
   function renderEvent(event: Event) {
     const isMyEvent = (event.creatorUid === myUid);

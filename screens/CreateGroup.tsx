@@ -5,8 +5,7 @@ import { RoundedCheckbox } from 'react-native-rounded-checkbox';
 
 import { collection, query, where, doc, getDocs, addDoc, getDoc, updateDoc } from "firebase/firestore";
 
-import { db } from '../firebase';
-import { AuthContext } from '../store/auth-context';
+import { db, auth } from '../firebase';
 import { EventsContext } from '../store/events-context';
 import { UsersContext } from '../store/users-context';
 import LoadingOverlay from './LoadingOverlay';
@@ -16,9 +15,8 @@ import { Friend, FriendStatus } from '../utils/friend';
 import { Group } from '../utils/group';
 
 export default function CreateGroupScreen({ navigation }) {
-    const authCtx = useContext(AuthContext);
     const usersCtx = useContext(UsersContext);
-    const myUid: string = authCtx.uid;
+    const myUid: string = auth.currentUser.uid;
 
     const [title, setTitle] = useState("");
     const [loadingMessage, setLoadingMessage] = useState("");

@@ -4,8 +4,7 @@ import { Input, Button } from 'react-native-elements';
 import { collection, query, where, getDocs, orderBy, doc, addDoc, updateDoc, getDoc, deleteDoc, QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 import { Menu, MenuOption, MenuOptions, MenuTrigger } from 'react-native-popup-menu';
 
-import { db } from '../firebase';
-import { AuthContext } from '../store/auth-context';
+import { db, auth } from '../firebase';
 import { UsersContext } from '../store/users-context';
 
 import LoadingOverlay from './LoadingOverlay';
@@ -14,9 +13,8 @@ import { FriendStatus, Friend } from '../utils/friend';
 import { Group } from '../utils/group';
 
 export default function MyGroupsScreen({ navigation }) {
-    const authCtx = useContext(AuthContext);
     const usersCtx = useContext(UsersContext);
-    const myUid = authCtx.uid;
+    const myUid: string = auth.currentUser.uid;
 
     const [loadingMessage, setLoadingMessage] = useState("");
     const [refreshing, setRefreshing] = useState(false);
