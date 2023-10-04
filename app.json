@@ -20,6 +20,9 @@
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "NSCalendarsUsageDescription": "This app reads from and exports events to your calendar.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "This app checks where relevant events are relative to your location and allows you to share your location with trusted friends.",
+        "NSLocationAlwaysUsageDescription": "This app checks where relevant events are relative to your location and allows you to share your location with trusted friends.",
+        "NSLocationWhenInUseUsageDescription": "This app checks where relevant events are relative to your location and allows you to share your location with trusted friends.",
         "CFBundleURLTypes": [
           {
             "CFBundleURLSchemes": ["com.googleusercontent.apps.566822880515-htqgd1o219n75cto89c4k9105oq0qv4r"]
@@ -44,7 +47,15 @@
       ["expo-calendar",
       {
         "calendarPermission": "The app needs to access the calendar to read and export events."
-      }]
+      }],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location.",
+          "locationAlwaysPermission": "Allow $(PRODUCT_NAME) to use your location.",
+          "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
+      ]
     ]
   }
 }
