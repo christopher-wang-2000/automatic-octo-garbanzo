@@ -9,12 +9,14 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { MenuProvider } from 'react-native-popup-menu';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
+navigator.geolocation = require('@react-native-community/geolocation');
+
 import Login from './auth/Login';
 import Register from './auth/NewUser';
 import { auth } from './firebase';
 
-import EventsContextProvider from './store/events-context';
-import UsersContextProvider from './store/users-context';
+import EventsContextProvider, { EventsContext } from './store/events-context';
+import UsersContextProvider, { UsersContext } from './store/users-context';
 
 import WelcomeScreen from './screens/Home';
 import EventsScreen from './screens/Events';
@@ -97,6 +99,18 @@ function GroupsStackScreen() {
 
 const Tab = createBottomTabNavigator();
 function MyTabs() {
+  // const eventsCtx = useContext(EventsContext);
+  // const usersCtx = useContext(UsersContext);
+  // useEffect(() => {
+  //   async function loadData() {
+  //     const myUid = 
+  //     await usersCtx.loadGroups(myUid);
+  //     await usersCtx.loadFriends(myUid);
+
+  //   }
+  // }, []);
+  
+
   return (
     <Tab.Navigator initialRouteName="Events" screenOptions={{unmountOnBlur: true}}>
       <Tab.Screen name="Events" component={EventsStackScreen} options={{headerShown: false, unmountOnBlur: false}} />
