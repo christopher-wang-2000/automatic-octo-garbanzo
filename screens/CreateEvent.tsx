@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useState, useRef } from 'react';
 import { Alert, StyleSheet, Text, View, TextInput, FlatList } from 'react-native';
 import { Button, Input } from 'react-native-elements';
 import { collection, query, where, doc, getDocs, addDoc, getDoc, updateDoc } from "firebase/firestore";
@@ -21,6 +21,7 @@ import { googleApiKey } from '../api_key';
 export default function CreateEventScreen({ navigation, ...props }) {
     const usersCtx = useContext(UsersContext);
     const eventsCtx = useContext(EventsContext);
+    const placeText = useRef();
 
     const myUid = auth.currentUser.uid;
     const event = props?.route?.params?.event;
@@ -32,6 +33,7 @@ export default function CreateEventScreen({ navigation, ...props }) {
     const [friendsCanSee, setFriendsCanSee] = useState(event ? event.friendsCanSee : true);
     const [invitedGroups, setInvitedGroups] = useState(event?.invitedGroups ? event.invitedGroups : []);
     const [loadingStatus, setLoadingStatus] = useState("");
+    const [placeData, setPlaceData] = useState(null);
 
     async function addEvent() {
         if (title === "") {
@@ -42,16 +44,31 @@ export default function CreateEventScreen({ navigation, ...props }) {
         }
         else {
             setLoadingStatus("Creating event...");
-            const docRef = await addDoc(collection(db, "events"),
-                {   title,
-                    startTime,
-                    endTime,
-                    description,
-                    uid: myUid,
-                    rsvps: [myUid],
-                    friendsCanSee,
-                    invitedGroups
-                });
+            const event = placeData ? {
+                title,
+                startTime,
+                endTime,
+                description,
+                uid: myUid,
+                rsvps: [myUid],
+                friendsCanSee,
+                invitedGroups,
+                locationName: placeData.name,
+                locationAddress: placeData.formatted_address,
+                locationCoords: placeData.coords
+            } : {
+                title,
+                startTime,
+                endTime,
+                description,
+                uid: myUid,
+                rsvps: [myUid],
+                friendsCanSee,
+                invitedGroups,
+                // @ts-ignore
+                locationName: placeText.current?.getAddressText()
+            };
+            const docRef = await addDoc(collection(db, "events"), event);
             eventsCtx.addEvent(createEventFromDoc(await getDoc(docRef)));
             setLoadingStatus("");
             Alert.alert("Event created!");
@@ -109,6 +126,10 @@ export default function CreateEventScreen({ navigation, ...props }) {
     }
 
     useEffect(() => {
+        if (event) {
+            // @ts-ignore
+            placeText.current?.setAddressText(event.locationName);
+        }
         async function loadGroupsAndWait() {
             setLoadingStatus("Loading...");
             await usersCtx.loadGroups(myUid);
@@ -132,17 +153,45 @@ export default function CreateEventScreen({ navigation, ...props }) {
                     <Text style={styles.timeText}>End time:</Text>
                     <RNDateTimePicker value={endTime} mode="datetime" onChange={(_, date) => setEndTime(date)} />
                 </View>
-                <View style={{flex: 1, zIndex: 10}}>
+                <View style={{zIndex: 10, marginTop: 10, marginBottom: 50}}>
                     <GooglePlacesAutocomplete
-                        placeholder="Meeting location"
+                        placeholder="Location"
+                        ref={placeText}
                         onPress={(data, details = null) => {
-                            // 'details' is provided when fetchDetails = true
-                            console.log(data, details);
+                            async function getPlaceData() {
+                                const placeId = data.place_id;
+                                const response = await fetch(
+                                    `https://maps.googleapis.com/maps/api/place/details/json?fields=name%2Cformatted_address%2Cgeometry&place_id=${placeId}&key=${googleApiKey}`
+                                );
+                                if (response["ok"]) {
+                                    let locationData = (await response.json())["result"];
+                                    const { lat, lng } = locationData["geometry"]["location"];
+                                    locationData.coords = { latitude: lat, longitude: lng };
+                                    setPlaceData(locationData);
+                                }
+                                else {
+                                    Alert.alert("Location details could not be retrieved.");
+                                    console.error(JSON.stringify(response));
+                                }
+                            }
+                            getPlaceData();
                         }}
                         query={{
                             key: googleApiKey,
                             language: 'en',
                         }}
+                        currentLocation={true}
+                        styles={{
+                            listView: {marginTop: 45, position: "absolute"},
+                            separator: {height: 0.5, backgroundColor: '#c8c7cc'},
+                            textInput: {
+                                paddingVertical: 5,
+                                paddingHorizontal: 15,
+                                borderColor: "#DDDDDD",
+                                borderWidth: 1,
+                                height: 45
+                            }
+                            }}
                     />
                 </View>
                 <TextInput style={styles.eventDescription} placeholder="Enter a description here..."
@@ -188,3 +237,4 @@ const styles = StyleSheet.create({
         fontSize: 16
     },
 });
+

@@ -34,7 +34,10 @@ export type Event = {
   creatorUid: string,
   friendsCanSee: boolean,
   invitedGroups: Array<string>
-  rsvps: Array<string>
+  rsvps: Array<string>,
+  locationName: string,
+  locationAddress: string,
+  locationCoords: { latitude: number, longitude: number }
 }
 
 
@@ -48,7 +51,10 @@ export function createEventFromDoc(document: DocumentData) {
             creatorUid: data.uid,
             friendsCanSee: data.friendsCanSee,
             invitedGroups: data.invitedGroups,
-            rsvps: data.rsvps
+            rsvps: data.rsvps,
+            locationName: data.locationName,
+            locationAddress: data.locationAddress,
+            locationCoords: data.locationCoords
           };
 }
 
@@ -128,6 +134,7 @@ export default function EventsScreen({ navigation, ...props }) {
           {!oneDay && <Text style={styles.eventTime}>Ends: {event.endTime.toLocaleDateString() + " "
             + event.endTime.toLocaleTimeString(undefined, { timeStyle: "short" })}</Text>}
 
+          <Text style={{fontStyle: "italic"}}>Location: {event.locationName}</Text>
           <Text style={styles.eventCreatedBy}>Created by {creator}</Text>
           {event.description && <Text style={styles.eventDescription}>{event.description}</Text>}
 
@@ -142,10 +149,11 @@ export default function EventsScreen({ navigation, ...props }) {
           </View>}
         </MenuTrigger>
         <MenuOptions>
-          {isMyEvent && <MenuOption text="Update event" onSelect={() => { navigation.navigate("Create Event", { event }) }} />}
+          {isMyEvent && <MenuOption text="Update event" onSelect={() => navigation.navigate("Create Event", { event }) } />}
           {isMyEvent && <MenuOption text="Delete event" onSelect={() => deleteEvent(event)} />}
           {!rsvpd && !ended && <MenuOption text="I'm coming!" onSelect={() => rsvp(event)}/>}
           {rsvpd && !ended && <MenuOption text="I'm no longer coming" onSelect={() => unrsvp(event)}/>}
+          {event.locationCoords && <MenuOption text="Show in map" onSelect={() => navigation.navigate("Map", { event }) }/>}
           <MenuOption text="Add to Google Calendar" onSelect={() => addToGoogleCalendar(event)} />
         </MenuOptions>
       </Menu>

@@ -1,25 +1,58 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext, useRef } from 'react';
 import { View, StyleSheet, Alert } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import MapView, { Marker, Point, LatLng } from 'react-native-maps'
 import { googleApiKey } from '../api_key';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import * as Location from 'expo-location';
 
-export default function MapScreen({ navigation }) {
+import { Event } from './Events';
+import { EventsContext } from '../store/events-context';
+
+export default function MapScreen({ navigation, ...props }) {
     const [location, setLocation] = useState(null);
+    const [region, setRegion] = useState(null);
     const [markers, setMarkers] = useState([]);
+    const eventsCtx = useContext(EventsContext);
+    const isFocused = useIsFocused();
+
+    const selectedEvent = props?.route?.params?.event;
+    const markerRefs = useRef({});
+    const mapRef = useRef();
 
     useEffect(() => {
         async function getLocation() {
             const { status } = await Location.requestForegroundPermissionsAsync();
             if (status === "granted") {
                 const location = await Location.getCurrentPositionAsync({});
-                console.log(location);
                 setLocation(location);
+                if (!selectedEvent) {
+                    setRegion({
+                        latitude: location.coords.latitude,
+                        longitude: location.coords.longitude,
+                        latitudeDelta: 0.05,
+                        longitudeDelta: 0.05,
+                    });
+                }
             }
         }
         getLocation();
     }, []);
+
+    // move map to marker and display info when clicking "show in map" on events page
+    useEffect(() => {
+        if (selectedEvent) {
+            setRegion({
+                latitude: selectedEvent.locationCoords.latitude,
+                longitude: selectedEvent.locationCoords.longitude,
+                latitudeDelta: 0.05,
+                longitudeDelta: 0.05,
+            });
+            // delayed so that callout bubble doesn't get cut offscreen
+            setTimeout(() => markerRefs.current[selectedEvent.docId].showCallout(), 100);
+        }
+        props.route.params.event = undefined; // reset prop
+    }, [props?.route?.params?.event]);
 
     return (
         <View style={{flex: 1}}>
@@ -34,7 +67,7 @@ export default function MapScreen({ navigation }) {
                         borderWidth: 1
                       },
                 }}
-                    placeholder="Meeting location"
+                    placeholder="Search for location"
                     onPress={(data, details = null) => {
                         // 'details' is provided when fetchDetails = true
                         const placeId = data.place_id;
@@ -66,6 +99,7 @@ export default function MapScreen({ navigation }) {
             </View>
             <View style={{flex: 1}}>
                 <MapView style={{ ...StyleSheet.absoluteFillObject}}
+                    region={region}
                     showsUserLocation={true} >
                     {markers.map((place, index) => (
                         <Marker
@@ -73,6 +107,15 @@ export default function MapScreen({ navigation }) {
                             coordinate={place.coord}
                             title={place["name"]}
                             description={place["formatted_address"]}
+                        />
+                    ))}
+                    {eventsCtx.events.map((event: Event) => (
+                        <Marker
+                            ref={(element) => markerRefs.current[event.docId] = element}
+                            key={event.docId}
+                            coordinate={event.locationCoords}
+                            title={`Event: ${event.title}`}
+                            description={event.locationAddress}
                         />
                     ))}
                 </MapView>
