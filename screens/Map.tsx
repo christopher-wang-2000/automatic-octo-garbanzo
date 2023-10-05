@@ -12,11 +12,12 @@ import { EventsContext } from '../store/events-context';
 export default function MapScreen({ navigation, ...props }) {
     const [location, setLocation] = useState(null);
     const [region, setRegion] = useState(null);
-    const [markers, setMarkers] = useState([]);
+    const [searchMarker, setSearchMarker] = useState(null);
     const eventsCtx = useContext(EventsContext);
     const isFocused = useIsFocused();
 
     const selectedEvent = props?.route?.params?.event;
+    const searchMarkerRef = useRef();
     const markerRefs = useRef({});
     const mapRef = useRef();
 
@@ -58,13 +59,14 @@ export default function MapScreen({ navigation, ...props }) {
         <View style={{flex: 1}}>
             <View style={{zIndex: 10}}>
                 <GooglePlacesAutocomplete styles={{
+                    container: {margin: 20},
                     listView: {marginTop: 44, position: "absolute"},
                     separator: {height: 0.5, backgroundColor: '#c8c7cc'},
                     textInput: {
                         paddingVertical: 5,
                         paddingHorizontal: 15,
-                        borderColor: "#DDDDDD",
-                        borderWidth: 1
+                        borderColor: "#AAAAAA",
+                        borderWidth: 1,
                       },
                 }}
                     placeholder="Search for location"
@@ -80,9 +82,16 @@ export default function MapScreen({ navigation, ...props }) {
                                 let locationData = (await response.json())["result"];
                                 const { lat, lng } = locationData["geometry"]["location"];
                                 locationData.coord = { latitude: lat, longitude: lng };
-                                setMarkers([...markers, locationData]);
-                                // console.log(locationData);
-                                console.log(markers);
+                                setSearchMarker(locationData);
+                                setRegion({
+                                    latitude: lat,
+                                    longitude: lng,
+                                    latitudeDelta: 0.05,
+                                    longitudeDelta: 0.05,
+                                });
+                                // delayed so that callout bubble doesn't get cut offscreen
+                                // @ts-ignore
+                                setTimeout(() => searchMarkerRef.current?.showCallout(), 100);
                             }
                             else {
                               Alert.alert("Location details could not be retrieved.");
@@ -97,18 +106,19 @@ export default function MapScreen({ navigation, ...props }) {
                     }}
                 />
             </View>
-            <View style={{flex: 1}}>
+            <View style={{flex: 1, position: "absolute", ...StyleSheet.absoluteFillObject}}>
                 <MapView style={{ ...StyleSheet.absoluteFillObject}}
                     region={region}
                     showsUserLocation={true} >
-                    {markers.map((place, index) => (
+                    {searchMarker && (
                         <Marker
-                            key={index}
-                            coordinate={place.coord}
-                            title={place["name"]}
-                            description={place["formatted_address"]}
+                            ref={searchMarkerRef}
+                            coordinate={searchMarker.coord}
+                            title={searchMarker["name"]}
+                            description={searchMarker["formatted_address"]}
+                            pinColor='blue'
                         />
-                    ))}
+                    )}
                     {eventsCtx.events.map((event: Event) => (
                         <Marker
                             ref={(element) => markerRefs.current[event.docId] = element}
