@@ -1,7 +1,7 @@
-import { useContext, useEffect, useState, useRef } from 'react';
+import { useContext, useEffect, useState, useRef, useCallback } from 'react';
 import { Alert, StyleSheet, Text, View, TextInput, FlatList } from 'react-native';
 import { Button, Input } from 'react-native-elements';
-import { collection, query, where, doc, getDocs, addDoc, getDoc, updateDoc } from "firebase/firestore";
+import { collection, query, where, doc, getDocs, addDoc, getDoc, updateDoc, deleteField } from "firebase/firestore";
 import RNDateTimePicker from '@react-native-community/datetimepicker';
 import { DateTime } from "luxon";
 import { Event } from './Events';
@@ -21,8 +21,6 @@ import { googleApiKey } from '../api_key';
 export default function CreateEventScreen({ navigation, ...props }) {
     const usersCtx = useContext(UsersContext);
     const eventsCtx = useContext(EventsContext);
-    const placeText = useRef();
-
     const myUid = auth.currentUser.uid;
     const event = props?.route?.params?.event;
 
@@ -33,7 +31,28 @@ export default function CreateEventScreen({ navigation, ...props }) {
     const [friendsCanSee, setFriendsCanSee] = useState(event ? event.friendsCanSee : true);
     const [invitedGroups, setInvitedGroups] = useState(event?.invitedGroups ? event.invitedGroups : []);
     const [loadingStatus, setLoadingStatus] = useState("");
+    const [placeName, setPlaceName] = useState(event ? event?.locationName : "");
+    const [autocompleted, setAutocompleted] = useState(event?.placeId ? true : false);
     const [placeData, setPlaceData] = useState(null);
+
+    async function getPlaceData(placeId: string): Promise<void> {
+        const response = await fetch(
+            `https://maps.googleapis.com/maps/api/place/details/json?fields=name%2Cformatted_address%2Cgeometry&place_id=${placeId}&key=${googleApiKey}`
+        );
+        if (response["ok"]) {
+            let locationData = (await response.json())["result"];
+            console.log(JSON.stringify(locationData));
+            const { lat, lng } = locationData["geometry"]["location"];
+            locationData.coords = { latitude: lat, longitude: lng };
+            locationData.placeId = placeId;
+            setAutocompleted(true);
+            setPlaceData(locationData);
+        }
+        else {
+            Alert.alert("Location details could not be retrieved.");
+            console.error(JSON.stringify(response));
+        }
+    }
 
     async function addEvent() {
         if (title === "") {
@@ -44,7 +63,7 @@ export default function CreateEventScreen({ navigation, ...props }) {
         }
         else {
             setLoadingStatus("Creating event...");
-            const event = placeData ? {
+            const eventDoc = (placeData && autocompleted) ? {
                 title,
                 startTime,
                 endTime,
@@ -55,7 +74,8 @@ export default function CreateEventScreen({ navigation, ...props }) {
                 invitedGroups,
                 locationName: placeData.name,
                 locationAddress: placeData.formatted_address,
-                locationCoords: placeData.coords
+                locationCoords: placeData.coords,
+                placeId: placeData.placeId
             } : {
                 title,
                 startTime,
@@ -66,9 +86,9 @@ export default function CreateEventScreen({ navigation, ...props }) {
                 friendsCanSee,
                 invitedGroups,
                 // @ts-ignore
-                locationName: placeText.current?.getAddressText()
+                locationName: placeName.trim()
             };
-            const docRef = await addDoc(collection(db, "events"), event);
+            const docRef = await addDoc(collection(db, "events"), eventDoc);
             eventsCtx.addEvent(createEventFromDoc(await getDoc(docRef)));
             setLoadingStatus("");
             Alert.alert("Event created!");
@@ -86,14 +106,31 @@ export default function CreateEventScreen({ navigation, ...props }) {
         else {
             setLoadingStatus("Updating event...");
             const docRef = doc(db, "events", event.docId);
-            await updateDoc(docRef,
-                {   title,
-                    startTime,
-                    endTime,
-                    description,
-                    friendsCanSee,
-                    invitedGroups
-                });
+            const eventDoc = (placeData && autocompleted) ? {
+                title,
+                startTime,
+                endTime,
+                description,
+                friendsCanSee,
+                invitedGroups,
+                locationName: placeData.name,
+                locationAddress: placeData.formatted_address,
+                locationCoords: placeData.coords,
+                placeId: placeData.placeId
+            } : {
+                title,
+                startTime,
+                endTime,
+                description,
+                friendsCanSee,
+                invitedGroups,
+                // @ts-ignore
+                locationName: placeName.trim(),
+                locationAddress: deleteField(),
+                locationCoords: deleteField(),
+                placeId: deleteField()
+            };
+            await updateDoc(docRef, eventDoc);
             eventsCtx.updateEvent(createEventFromDoc(await getDoc(docRef)));
             setLoadingStatus("");
             Alert.alert("Event updated!");
@@ -126,10 +163,6 @@ export default function CreateEventScreen({ navigation, ...props }) {
     }
 
     useEffect(() => {
-        if (event) {
-            // @ts-ignore
-            placeText.current?.setAddressText(event.locationName);
-        }
         async function loadGroupsAndWait() {
             setLoadingStatus("Loading...");
             await usersCtx.loadGroups(myUid);
@@ -137,6 +170,19 @@ export default function CreateEventScreen({ navigation, ...props }) {
         }
         loadGroupsAndWait();
     }, []);
+
+    useEffect(() => {
+        console.log(event);
+        if (event?.placeId) {
+            setAutocompleted(true);
+            getPlaceData(event.placeId);
+        }
+        else {
+            setAutocompleted(false);
+        }
+    }, [event]);
+
+
 
     if (loadingStatus) {
         return <LoadingOverlay message={loadingStatus}/>
@@ -154,45 +200,13 @@ export default function CreateEventScreen({ navigation, ...props }) {
                     <RNDateTimePicker value={endTime} mode="datetime" onChange={(_, date) => setEndTime(date)} />
                 </View>
                 <View style={{zIndex: 10, marginTop: 10, marginBottom: 50}}>
-                    <GooglePlacesAutocomplete
-                        placeholder="Location"
-                        ref={placeText}
-                        onPress={(data, details = null) => {
-                            async function getPlaceData() {
-                                const placeId = data.place_id;
-                                const response = await fetch(
-                                    `https://maps.googleapis.com/maps/api/place/details/json?fields=name%2Cformatted_address%2Cgeometry&place_id=${placeId}&key=${googleApiKey}`
-                                );
-                                if (response["ok"]) {
-                                    let locationData = (await response.json())["result"];
-                                    const { lat, lng } = locationData["geometry"]["location"];
-                                    locationData.coords = { latitude: lat, longitude: lng };
-                                    setPlaceData(locationData);
-                                }
-                                else {
-                                    Alert.alert("Location details could not be retrieved.");
-                                    console.error(JSON.stringify(response));
-                                }
-                            }
-                            getPlaceData();
-                        }}
-                        query={{
-                            key: googleApiKey,
-                            language: 'en',
-                        }}
-                        currentLocation={true}
-                        styles={{
-                            listView: {marginTop: 45, position: "absolute"},
-                            separator: {height: 0.5, backgroundColor: '#c8c7cc'},
-                            textInput: {
-                                paddingVertical: 5,
-                                paddingHorizontal: 15,
-                                borderColor: "#DDDDDD",
-                                borderWidth: 1,
-                                height: 45
-                            }
-                            }}
-                    />
+                    <PlaceTextBox
+                        event={event}
+                        placeData={placeData}
+                        autocompleted={autocompleted}
+                        getPlaceData={getPlaceData}
+                        setPlaceName={setPlaceName}
+                        setAutocompleted={setAutocompleted}  />
                 </View>
                 <TextInput style={styles.eventDescription} placeholder="Enter a description here..."
                     multiline={true} numberOfLines={5} defaultValue={description} onChangeText={setDescription} />
@@ -201,14 +215,14 @@ export default function CreateEventScreen({ navigation, ...props }) {
                     <FlatList style={{borderColor: "gray", borderWidth: 1, padding: 5}} data={[undefined, ...usersCtx.groups]}
                         renderItem={itemData => renderGroupSelect(itemData.item)} />
                 </View>
-                
-
                 {!event && <Button title="Create event" onPress={addEvent} />}
                 {event && <Button title="Update event" onPress={updateEvent} />}
             </View>
         </TouchableWithoutFeedback>
     );
 }
+
+
 
 const styles = StyleSheet.create({
     rootContainer: {
@@ -238,3 +252,50 @@ const styles = StyleSheet.create({
     },
 });
 
+
+
+const PlaceTextBox = ({ event, placeData, autocompleted, getPlaceData, setPlaceName, setAutocompleted }) => {
+    const ref = useRef();
+  
+    useEffect(() => {
+        // @ts-ignore
+        ref?.current?.setAddressText(event ? event.locationName : "");
+    }, [event]);
+  
+    return (
+      <View>
+        <GooglePlacesAutocomplete
+            ref={ref}
+            placeholder="Location"
+            nearbyPlacesAPI="GoogleReverseGeocoding"
+            onPress={(data, details = null) => {
+                getPlaceData(data.place_id);
+            }}
+            textInputProps={{onChangeText: (text) => {
+                // @ts-ignore
+                if (ref.current?.isFocused()) {
+                    setAutocompleted(false);
+                }
+                setPlaceName(text);
+            }}}
+            query={{
+                key: googleApiKey,
+                language: 'en',
+            }}
+            currentLocation={true}
+            styles={{
+                listView: {marginTop: 45, position: "absolute"},
+                separator: {height: 0.5, backgroundColor: '#c8c7cc'},
+                textInput: {
+                    paddingVertical: 5,
+                    paddingHorizontal: 15,
+                    borderColor: "#DDDDDD",
+                    borderWidth: 1,
+                    height: 45,
+                    color: autocompleted ? "gray" : "black"
+                }
+            }}
+        />
+      </View>
+    );
+};

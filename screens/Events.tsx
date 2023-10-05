@@ -37,7 +37,8 @@ export type Event = {
   rsvps: Array<string>,
   locationName: string,
   locationAddress: string,
-  locationCoords: { latitude: number, longitude: number }
+  locationCoords: { latitude: number, longitude: number },
+  placeId: string
 }
 
 
@@ -54,7 +55,8 @@ export function createEventFromDoc(document: DocumentData) {
             rsvps: data.rsvps,
             locationName: data.locationName,
             locationAddress: data.locationAddress,
-            locationCoords: data.locationCoords
+            locationCoords: data.locationCoords,
+            placeId: data.placeId
           };
 }
 

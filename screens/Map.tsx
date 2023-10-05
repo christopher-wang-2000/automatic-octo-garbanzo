@@ -52,7 +52,9 @@ export default function MapScreen({ navigation, ...props }) {
             // delayed so that callout bubble doesn't get cut offscreen
             setTimeout(() => markerRefs.current[selectedEvent.docId].showCallout(), 100);
         }
-        props.route.params.event = undefined; // reset prop
+        if (props?.route?.params?.event) {
+            props.route.params.event = undefined; // reset prop
+        }
     }, [props?.route?.params?.event]);
 
     return (
