@@ -5,6 +5,7 @@ import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useContext, useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { MaterialIcons, Ionicons, FontAwesome, Feather } from '@expo/vector-icons'; 
 
 import { MenuProvider } from 'react-native-popup-menu';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
@@ -112,7 +113,32 @@ function MyTabs() {
   
 
   return (
-    <Tab.Navigator initialRouteName="Events" screenOptions={{unmountOnBlur: true}}>
+    <Tab.Navigator initialRouteName="Events" screenOptions={({ route }) => ({
+      tabBarIcon: ({ focused, color, size }) => {
+        switch (route.name) {
+          case "Events": {
+            return <MaterialIcons name={"event"} size={size} color={color} />;
+          }
+          case "Map": {
+            return <Feather name={"map"} size={size} color={color} />;
+          }
+          case "Friends": {
+            return <Ionicons name={"people"} size={size} color={color} />;
+          }
+          case "Groups": {
+            return <FontAwesome name={"group"} size={size} color={color} />;
+          }
+          case "Settings": {
+            return <Feather name={"settings"} size={size} color={color} />;
+          }
+        }
+        
+      },
+      unmountOnBlur: true,
+      // tabBarActiveTintColor: 'tomato',
+      // tabBarInactiveTintColor: 'gray',
+    })}
+    >
       <Tab.Screen name="Events" component={EventsStackScreen} options={{headerShown: false, unmountOnBlur: false}} />
       <Tab.Screen name="Map" component={MapScreen} options={{unmountOnBlur: false}} />
       <Tab.Screen name="Friends" component={MyFriendsScreen} options={{unmountOnBlur: false}} />
