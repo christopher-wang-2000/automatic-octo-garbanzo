@@ -4,7 +4,6 @@ import { Button, Input } from 'react-native-elements';
 import { collection, query, where, doc, getDocs, addDoc, getDoc, updateDoc, deleteField } from "firebase/firestore";
 import RNDateTimePicker from '@react-native-community/datetimepicker';
 import { DateTime } from "luxon";
-import { Event } from './Events';
 import Checkbox from 'expo-checkbox';
 import { Keyboard, TouchableWithoutFeedback } from 'react-native';
 
@@ -15,6 +14,7 @@ import { UsersContext } from '../store/users-context';
 import { EventsContext } from '../store/events-context';
 import LoadingOverlay from './LoadingOverlay';
 import { createEventFromDoc } from './Events';
+import { Event } from '../utils/event';
 import { Group } from '../utils/group';
 import { googleApiKey } from '../api_key';
 

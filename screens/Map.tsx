@@ -1,12 +1,12 @@
 import { useState, useEffect, useContext, useRef } from 'react';
-import { View, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
-import MapView, { Marker, Point, LatLng } from 'react-native-maps'
+import MapView, { Marker, Callout, Point, LatLng } from 'react-native-maps'
 import { googleApiKey } from '../api_key';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 import * as Location from 'expo-location';
 
-import { Event } from './Events';
+import { Event, getTimeString } from '../utils/event';
 import { EventsContext } from '../store/events-context';
 
 export default function MapScreen({ navigation, ...props }) {
@@ -126,9 +126,18 @@ export default function MapScreen({ navigation, ...props }) {
                             ref={(element) => markerRefs.current[event.docId] = element}
                             key={event.docId}
                             coordinate={event.locationCoords}
-                            title={`Event: ${event.title}`}
-                            description={event.locationAddress}
-                        />
+                        >
+                                <Callout style={{flex: 1, position: "relative", maxWidth: "100%"}}>
+                                    <View>
+                                        <Text style={{fontWeight: "bold", fontSize: 14}}>{event.title}</Text>
+                                        <Text style={{fontSize: 12}}>{event.locationName}</Text>
+                                        <Text style={{fontSize: 12}}>{event.locationAddress}</Text>
+                                        <Text style={{fontSize: 12}}>{getTimeString(event)}</Text>
+                                    </View>
+                                </Callout>
+                        </Marker>
+
+                        
                     ))}
                 </MapView>
             </View>

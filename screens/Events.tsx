@@ -16,31 +16,11 @@ import { db, auth } from '../firebase';
 import { EventsContext } from '../store/events-context';
 import { UsersContext } from '../store/users-context';
 
+import { Event, getTimeString } from '../utils/event';
 import { User } from '../utils/user';
 import { Friend } from '../utils/friend';
 import { Group } from '../utils/group';
 import LoadingOverlay from './LoadingOverlay';
-
-import { Logs } from 'expo'
-
-Logs.enableExpoCliLogging()
-
-export type Event = {
-  docId: string,
-  title: string,
-  startTime: Date,
-  endTime: Date,
-  description: string,
-  creatorUid: string,
-  friendsCanSee: boolean,
-  invitedGroups: Array<string>
-  rsvps: Array<string>,
-  locationName: string,
-  locationAddress: string,
-  locationCoords: { latitude: number, longitude: number },
-  placeId: string
-}
-
 
 export function createEventFromDoc(document: DocumentData) {
   const data = document.data();
@@ -83,7 +63,6 @@ export default function EventsScreen({ navigation, ...props }) {
   function renderEvent(event: Event) {
     const isMyEvent = (event.creatorUid === myUid);
     const creator = isMyEvent ? "you" : usersCtx.getUser(event.creatorUid).fullName;
-    const oneDay = (event.startTime.toLocaleDateString() === event.endTime.toLocaleDateString());
     const currentTime = new Date().getTime();
     const inProgress = (currentTime >= event.startTime.getTime()) && (currentTime < event.endTime.getTime());
     const ended = (currentTime >= event.endTime.getTime());
@@ -127,16 +106,8 @@ export default function EventsScreen({ navigation, ...props }) {
       <Menu key={event.docId} style={rsvpd ? styles.rsvpdEvent : styles.otherEvent}>
         <MenuTrigger>
           <Text style={styles.eventTitle}>{event.title + (inProgress ? " (IN PROGRESS)" : "")}</Text>
-
-          {oneDay && <Text style={styles.eventTime}>{event.startTime.toLocaleDateString() + ", " +
-            event.startTime.toLocaleTimeString(undefined, { timeStyle: "short" })
-            + " to " + event.endTime.toLocaleTimeString(undefined, { timeStyle: "short" })}</Text>}
-          {!oneDay && <Text style={styles.eventTime}>Starts: {event.startTime.toLocaleDateString() + " "
-            + event.startTime.toLocaleTimeString(undefined, { timeStyle: "short" })}</Text>}
-          {!oneDay && <Text style={styles.eventTime}>Ends: {event.endTime.toLocaleDateString() + " "
-            + event.endTime.toLocaleTimeString(undefined, { timeStyle: "short" })}</Text>}
-
-          <Text style={{fontStyle: "italic"}}>Location: {event.locationName}</Text>
+          {event.locationName && <Text style={{fontStyle: "italic"}}>{event.locationName}</Text>}
+          <Text style={styles.eventTime}>{getTimeString(event)}</Text>
           <Text style={styles.eventCreatedBy}>Created by {creator}</Text>
           {event.description && <Text style={styles.eventDescription}>{event.description}</Text>}
 
